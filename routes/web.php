@@ -4,6 +4,7 @@ use App\Http\Controllers\admin\Admin;
 use App\Http\Controllers\admin\CategoriesMember;
 use App\Http\Controllers\admin\Category;
 use App\Http\Controllers\admin\CategoryExpenses;
+use App\Http\Controllers\admin\Coupons;
 use App\Http\Controllers\admin\Expenses;
 use App\Http\Controllers\admin\Member;
 use App\Http\Controllers\admin\Memberorder;
@@ -34,6 +35,7 @@ Route::get('/', [Main::class, 'index'])->name('index');
 Route::get('/order', [Main::class, 'order'])->name('order');
 Route::post('/sendEmp', [Main::class, 'sendEmp'])->name('sendEmp');
 Route::post('/sendorder', [Main::class, 'SendOrder'])->name('SendOrder');
+Route::post('/checkCoupon', [Main::class, 'checkCoupon'])->name('checkCoupon');
 Route::get('/detail/{id}', [Main::class, 'detail'])->name('detail');
 Route::get('/detail', function () {
     return redirect()->route('index');
@@ -121,6 +123,13 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/admin/table/edit/{id}', [Table::class, 'tableEdit'])->name('tableEdit');
     Route::post('/admin/table/delete', [Table::class, 'tableDelete'])->name('tableDelete');
     Route::post('/admin/table/save', [Table::class, 'tableSave'])->name('tableSave');
+    //คูปอง
+    Route::get('/admin/coupons', [Coupons::class, 'coupons'])->name('coupons');
+    Route::post('/admin/coupons/listData', [Coupons::class, 'couponslistData'])->name('couponslistData');
+    Route::get('/admin/coupons/create', [Coupons::class, 'couponsCreate'])->name('couponsCreate');
+    Route::get('/admin/coupons/edit/{id}', [Coupons::class, 'couponsEdit'])->name('couponsEdit');
+    Route::post('/admin/coupons/save', [Coupons::class, 'couponSave'])->name('couponSave');
+    Route::post('/admin/coupons/delete', [Coupons::class, 'couponsDelete'])->name('couponsDelete');
     //หมวดหมู่
     Route::get('/admin/category', [Category::class, 'category'])->name('category');
     Route::post('/admin/category/listData', [Category::class, 'categorylistData'])->name('categorylistData');
@@ -222,6 +231,26 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/admin/order/printOrderAdminCook/{id}', [Memberorder::class, 'printOrderAdminCook'])->name('printOrderAdminCook');
     Route::get('/admin/order/printOrder/{id}', [Memberorder::class, 'printOrder'])->name('printOrder');
     Route::get('/admin/order/printOrderRider/{id}', [Memberorder::class, 'printOrderRider'])->name('printOrderRider');
+
+
+    //user
+    Route::get('/admin/user', [Member::class, 'user'])->name('user');
+    Route::post('/admin/user/listData', [Member::class, 'UsermemberlistData'])->name('UsermemberlistData');
+    Route::get('/admin/user/create', [Member::class, 'userCreate'])->name('userCreate');
+    Route::get('/admin/user/edit/{id}', [Member::class, 'userEdit'])->name('userEdit');
+    Route::post('/admin/user/delete', [Member::class, 'userDelete'])->name('userDelete');
+    Route::post('/admin/user/save', [Member::class, 'userSave'])->name('userSave');
+    //check email and tel
+    Route::post('/check-email-exists', [Member::class, 'checkEmailExists'])->name('checkEmailExists');
+    Route::post('/check-tel-exists', [Member::class, 'checkTelExists'])->name('checkTelExists');
+    //Coupons
+    Route::get('/admin/coupons', [Coupons::class, 'coupons'])->name('coupons');
+    Route::post('/admin/coupons/listData', [Coupons::class, 'couponslistData'])->name('couponslistData');
+    Route::get('/admin/coupons/create', [Coupons::class, 'couponsCreate'])->name('couponsCreate');
+    Route::get('/admin/coupons/edit/{id}', [Coupons::class, 'couponsEdit'])->name('couponsEdit');
+    Route::post('/admin/coupons/save', [Coupons::class, 'couponSave'])->name('couponSave');
+    Route::post('/admin/coupons/delete', [Coupons::class, 'couponsDelete'])->name('couponsDelete');
+
 });
 
 
