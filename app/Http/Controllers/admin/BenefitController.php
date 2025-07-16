@@ -72,6 +72,13 @@ class BenefitController extends Controller
                 }
                 $usageInfo .= '</div>';
 
+                // สถานะ (แบบง่าย - แสดงเฉพาะเปิด/ปิดการใช้งาน)
+                if ($rs->is_active) {
+                    $status = '<span class="badge bg-success">เปิดใช้งาน</span>';
+                } else {
+                    $status = '<span class="badge bg-danger">ปิดใช้งาน</span>';
+                }
+
                 $action = '<a href="' . route('benefitEdit', $rs->id) . '" class="btn btn-sm btn-outline-primary" title="แก้ไข"><i class="bx bx-edit-alt"></i></a>
                 <button type="button" data-id="' . $rs->id . '" class="btn btn-sm btn-outline-danger deleteBenefit" title="ลบ"><i class="bx bxs-trash"></i></button>';
                 
@@ -81,6 +88,7 @@ class BenefitController extends Controller
                     'point_required' => number_format($rs->point_required ?? 0) . ' แต้ม',
                     'expired_at' => $expiredAt,
                     'usage_info' => $usageInfo,
+                    'status' => $status,
                     'action' => $action
                 ];
             }

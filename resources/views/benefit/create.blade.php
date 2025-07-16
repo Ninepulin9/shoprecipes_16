@@ -31,8 +31,6 @@
                                                 <option value="discount">ส่วนลด</option>
                                                 <option value="free_item">ของแถม</option>
                                                 <option value="cashback">คืนเงิน</option>
-                                                <option value="free_shipping">ฟรีค่าส่ง</option>
-                                                <option value="point_multiplier">คูณแต้ม</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6">

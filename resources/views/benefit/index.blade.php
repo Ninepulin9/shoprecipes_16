@@ -1,6 +1,41 @@
 @extends('admin.layout')
 @section('style')
 <link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.css" />
+<style>
+/* ปรับสีปุ่ม toggle status */
+.btn-outline-success.toggleStatus {
+    color: #28a745;
+    border-color: #28a745;
+}
+.btn-outline-success.toggleStatus:hover {
+    color: #fff;
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-outline-danger.toggleStatus {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+.btn-outline-danger.toggleStatus:hover {
+    color: #fff;
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* เพิ่มเอฟเฟกต์ transition */
+.toggleStatus {
+    transition: all 0.3s ease;
+}
+
+/* ปรับไอคอน toggle */
+.toggleStatus .bx-toggle-right {
+    color: #28a745;
+}
+.toggleStatus .bx-toggle-left {
+    color: #dc3545;
+}
+</style>
 @endsection
 @section('content')
 <div class="content-wrapper">
@@ -23,6 +58,7 @@
                                     <th class="text-center">Point ที่ใช้แลก</th>
                                     <th class="text-center">วันหมดอายุ</th>
                                     <th class="text-center">การใช้งาน</th>
+                                    <th class="text-center">สถานะ</th>
                                     <th class="text-center">จัดการ</th>
                                 </tr>
                             </thead>
@@ -72,17 +108,17 @@
                 {
                     data: 'name',
                     class: 'text-center',
-                    width: '25%'
+                    width: '20%'
                 },
                 {
                     data: 'categories',
                     class: 'text-center',
-                    width: '15%'
+                    width: '12%'
                 },
                 {
                     data: 'point_required',
                     class: 'text-center',
-                    width: '15%',
+                    width: '12%',
                     orderable: false
                 },
                 {
@@ -98,6 +134,12 @@
                     orderable: false
                 },
                 {
+                    data: 'status',
+                    class: 'text-center',
+                    width: '11%',
+                    orderable: false
+                },
+                {
                     data: 'action',
                     class: 'text-center',
                     width: '15%',
@@ -106,7 +148,7 @@
             ]
         });
 
-        // ลบสิทธิประโยชน์
+        // Delete Benefit
         $(document).on('click', '.deleteBenefit', function(e) {
             e.preventDefault();
             var id = $(this).data('id');
