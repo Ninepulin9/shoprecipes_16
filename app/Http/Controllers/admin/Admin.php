@@ -229,18 +229,20 @@ class Admin extends Controller
                 ->whereIn('status', [1, 2])
                 ->first();
 
-                $discount = 0;
+            $discount = 0;
+            $couponCode = $request->input('coupon_code');
+            $couponModel = null;
             $couponCode = $request->input('coupon_code');
             if ($couponCode) {
-                $coupon = Coupon::where('code', $couponCode)->first();
-                if ($coupon && $coupon->isValid()) {
-                    if ($coupon->discount_type == 'percent') {
-                        $discount = ($total->total * $coupon->discount_value) / 100;
+                $couponModel = Coupon::where('code', $couponCode)->first();
+                if ($couponModel && $couponModel->isValid()) {
+                    if ($couponModel->discount_type == 'percent') {
+                        $discount = ($total->total * $couponModel->discount_value) / 100;
                     } else {
-                        $discount = $coupon->discount_value;
+                        $discount = $couponModel->discount_value;
                     }
                     $discount = min($discount, $total->total);
-                    $coupon->increment('used_count');
+                    $couponModel->increment('used_count');
                 }
             }
             $pay = new Pay();
@@ -264,6 +266,9 @@ class Admin extends Controller
                     $user = User::find($userId);
                     if ($user) {
                         $points = floor(($total->total - $discount) / 10);
+                        if ($couponModel && $couponModel->isValid()) {
+                            $points += 10;
+                        }
                         $user->point += $points;
                         $user->save();
                     }
