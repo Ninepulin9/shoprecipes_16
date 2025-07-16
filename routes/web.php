@@ -14,6 +14,7 @@ use App\Http\Controllers\admin\Promotion;
 use App\Http\Controllers\admin\Table;
 use App\Http\Controllers\admin\Rider;
 use App\Http\Controllers\admin\Stock;
+use App\Http\Controllers\admin\BenefitController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Delivery;
 use App\Http\Controllers\Main;
@@ -252,6 +253,21 @@ Route::middleware(['role:admin'])->group(function () {
     Route::post('/admin/coupons/save', [Coupons::class, 'couponSave'])->name('couponSave');
     Route::post('/admin/coupons/delete', [Coupons::class, 'couponsDelete'])->name('couponsDelete');
 
+    //Benefits// Benefit Routes
+    Route::prefix('admin/benefit')->group(function () {
+    Route::get('/', [BenefitController::class, 'benefit'])->name('benefit');
+    Route::post('/list-data', [BenefitController::class, 'benefitListData'])->name('benefitListData');
+    Route::get('/create', [BenefitController::class, 'benefitCreate'])->name('benefitCreate');
+    Route::post('/save', [BenefitController::class, 'benefitSave'])->name('benefitSave');
+    Route::get('/edit/{id}', [BenefitController::class, 'benefitEdit'])->name('benefitEdit');
+    Route::post('/delete', [BenefitController::class, 'benefitDelete'])->name('benefitDelete');
+    Route::post('/toggle-status', [BenefitController::class, 'benefitToggleStatus'])->name('benefitToggleStatus');
+    Route::get('/detail/{id}', [BenefitController::class, 'benefitDetail'])->name('benefitDetail');
+    Route::post('/check-available', [BenefitController::class, 'benefitCheckAvailable'])->name('benefitCheckAvailable');
+    Route::get('/trashed', [BenefitController::class, 'benefitTrashed'])->name('benefitTrashed');
+    Route::post('/restore/{id}', [BenefitController::class, 'benefitRestore'])->name('benefitRestore');
+    Route::post('/force-delete/{id}', [BenefitController::class, 'benefitForceDelete'])->name('benefitForceDelete');
+});
 });
 
 

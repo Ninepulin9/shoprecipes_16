@@ -54,7 +54,7 @@ $config = Config::first();
                     <div data-i18n="Analytics">โปรโมชั่น</div>
                 </a>
             </li>
-            
+
             <li class="menu-item {{ ($function_key == 'table') ? 'active' : '' }}">
                 <a href="{{route('table')}}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-barcode"></i>
@@ -63,11 +63,11 @@ $config = Config::first();
             </li>
 
             <li class="menu-item {{ ($function_key == 'coupons') ? 'active' : '' }}">
-            <a href="{{route('coupons')}}" class="menu-link">
-                <i class="menu-icon tf-icons bx bxs-purchase-tag-alt"></i>
-                <div data-i18n="Analytics">คูปอง</div>
-            </a>
-        </li>
+                <a href="{{route('coupons')}}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bxs-purchase-tag-alt"></i>
+                    <div data-i18n="Analytics">คูปอง</div>
+                </a>
+            </li>
             <li class="menu-header small text-uppercase"><span class="menu-header-text">สมาชิก</span></li>
             <li class="menu-item {{ ($function_key == 'memberCategory') ? 'active' : '' }}">
                 <a href="{{route('memberCategory')}}" class="menu-link">
@@ -115,6 +115,12 @@ $config = Config::first();
                     <div data-i18n="Basic">รายการสต็อก</div>
                 </a>
             </li>
+            <li class="menu-item {{ ($function_key == 'benefit') ? 'active' : '' }}">
+                <a href="{{route('benefit')}}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bxs-gift"></i>
+                    <div data-i18n="Basic">สิทธิประโยชน์</div>
+                </a>
+            </li>
             <li class="menu-header small text-uppercase"><span class="menu-header-text">รายจ่าย</span></li>
             <li class="menu-item {{ ($function_key == 'category_expenses') ? 'active' : '' }}">
                 <a href="{{route('category_expenses')}}" class="menu-link">
@@ -129,25 +135,25 @@ $config = Config::first();
                 </a>
             </li>
         @elseif(Session::get('user')->is_rider == 1)
-        <li class="menu-item {{ ($function_key == 'OrderRider') ? 'active' : '' }}">
-            <a href="{{route('OrderRider')}}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-cycling"></i>
-                <div data-i18n="Analytics">ไรเดอร์</div>
-            </a>
-        </li>
+            <li class="menu-item {{ ($function_key == 'OrderRider') ? 'active' : '' }}">
+                <a href="{{route('OrderRider')}}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-cycling"></i>
+                    <div data-i18n="Analytics">ไรเดอร์</div>
+                </a>
+            </li>
         @elseif(Session::get('user')->is_member == 1)
-        <li class="menu-item {{ ($function_key == 'Memberorder') ? 'active' : '' }}">
-            <a href="{{route('Memberorder')}}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-store"></i>
-                <div data-i18n="Analytics">ออเดอร์หน้าร้าน</div>
-            </a>
-        </li>
-        <li class="menu-item {{ ($function_key == 'MemberorderRider') ? 'active' : '' }}">
-            <a href="{{route('MemberorderRider')}}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-cycling"></i>
-                <div data-i18n="Analytics">ออเดอร์ออนไลน์</div>
-            </a>
-        </li>
+            <li class="menu-item {{ ($function_key == 'Memberorder') ? 'active' : '' }}">
+                <a href="{{route('Memberorder')}}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-store"></i>
+                    <div data-i18n="Analytics">ออเดอร์หน้าร้าน</div>
+                </a>
+            </li>
+            <li class="menu-item {{ ($function_key == 'MemberorderRider') ? 'active' : '' }}">
+                <a href="{{route('MemberorderRider')}}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-cycling"></i>
+                    <div data-i18n="Analytics">ออเดอร์ออนไลน์</div>
+                </a>
+            </li>
         @endif
     </ul>
 </aside>
