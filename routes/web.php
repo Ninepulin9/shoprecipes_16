@@ -19,7 +19,6 @@ use App\Http\Controllers\Delivery;
 use App\Http\Controllers\Main;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\admin\Coupons;
 
 /*
 |--------------------------------------------------------------------------
@@ -231,8 +230,8 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/admin/order/printOrderAdminCook/{id}', [Memberorder::class, 'printOrderAdminCook'])->name('printOrderAdminCook');
     Route::get('/admin/order/printOrder/{id}', [Memberorder::class, 'printOrder'])->name('printOrder');
     Route::get('/admin/order/printOrderRider/{id}', [Memberorder::class, 'printOrderRider'])->name('printOrderRider');
-<<<<<<< Updated upstream
-=======
+
+
     //user
     Route::get('/admin/user', [Member::class, 'user'])->name('user');
     Route::post('/admin/user/listData', [Member::class, 'UsermemberlistData'])->name('UsermemberlistData');
@@ -250,7 +249,7 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/admin/coupons/edit/{id}', [Coupons::class, 'couponsEdit'])->name('couponsEdit');
     Route::post('/admin/coupons/save', [Coupons::class, 'couponSave'])->name('couponSave');
     Route::post('/admin/coupons/delete', [Coupons::class, 'couponsDelete'])->name('couponsDelete');
->>>>>>> Stashed changes
+
 });
 
 
