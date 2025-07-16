@@ -222,6 +222,16 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/admin/order/printOrderAdminCook/{id}', [Memberorder::class, 'printOrderAdminCook'])->name('printOrderAdminCook');
     Route::get('/admin/order/printOrder/{id}', [Memberorder::class, 'printOrder'])->name('printOrder');
     Route::get('/admin/order/printOrderRider/{id}', [Memberorder::class, 'printOrderRider'])->name('printOrderRider');
+    //user
+    Route::get('/admin/user', [Member::class, 'user'])->name('user');
+    Route::post('/admin/user/listData', [Member::class, 'UsermemberlistData'])->name('UsermemberlistData');
+    Route::get('/admin/user/create', [Member::class, 'userCreate'])->name('userCreate');
+    Route::get('/admin/user/edit/{id}', [Member::class, 'userEdit'])->name('userEdit');
+    Route::post('/admin/user/delete', [Member::class, 'userDelete'])->name('userDelete');
+    Route::post('/admin/user/save', [Member::class, 'userSave'])->name('userSave');
+    //check email and tel
+    Route::post('/check-email-exists', [Member::class, 'checkEmailExists'])->name('checkEmailExists');
+    Route::post('/check-tel-exists', [Member::class, 'checkTelExists'])->name('checkTelExists');
 });
 
 

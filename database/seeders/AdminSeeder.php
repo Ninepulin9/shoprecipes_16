@@ -1,7 +1,7 @@
 <?php
 
 namespace Database\Seeders;
-
+use Illuminate\Support\Str;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -15,23 +15,28 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         User::firstOrCreate(
-            ['email' => 'admin@example.com'], // เงื่อนไขตรวจซ้ำ
+            ['email' => 'admin@example.com'], 
             [
                 'name' => 'ผู้ดูแลระบบ',
+                'UID' => Str::upper(Str::random(8)),
                 'email_verified_at' => now(),
                 'password' => Hash::make('123456789'),
                 'remember_token' => null,
-                'role' => 'admin'
+                'role' => 'admin',
+                'point' => 0 
             ]
         );
+
         User::firstOrCreate(
-            ['email' => 'users@example.com'], // เงื่อนไขตรวจซ้ำ
+            ['email' => 'users@example.com'], 
             [
                 'name' => 'ลูกค้า',
+                'UID' => Str::upper(Str::random(8)),
                 'email_verified_at' => now(),
                 'password' => Hash::make('123456789'),
                 'remember_token' => null,
-                'role' => 'user'
+                'role' => 'user',
+                'point' => 0 
             ]
         );
     }

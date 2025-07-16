@@ -21,6 +21,7 @@ use App\Models\UsersAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 
 class Delivery extends Controller
 {
@@ -327,14 +328,38 @@ class Delivery extends Controller
     public function UsersRegister(Request $request)
     {
         $input = $request->input();
-        $users = new User;
+        
+        // ตรวจสอบ email ซ้ำ
+        $existingEmail = User::where('email', $input['email'])->first();
+        if ($existingEmail) {
+            return redirect()->back()->with('error', 'อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น');
+        }
+        
+        // ตรวจสอบ tel ซ้ำ
+        $existingTel = User::where('tel', $input['tel'])->first();
+        if ($existingTel) {
+            return redirect()->back()->with('error', 'เบอร์โทรนี้ถูกใช้งานแล้ว กรุณาใช้เบอร์อื่น');
+        }
+        
+        // สร้าง UID ที่ unique
+        do {
+            $uid = Str::upper(Str::random(8));
+        } while (User::where('UID', $uid)->exists());
+        
+        // สร้าง user ใหม่
+        $users = new User();
         $users->name = $input['name'];
         $users->tel = $input['tel'];
         $users->email = $input['email'];
         $users->password = Hash::make($input['password']);
+        $users->UID = $uid;
+        $users->role = 'user';
+        $users->is_member = 0;
+        $users->point = 0;
         $users->email_verified_at = now();
+        
         if ($users->save()) {
-            return redirect()->route('delivery.login')->with('success', 'สมัครสมาชิกเรียบร้อยแล้ว');
+            return redirect()->route('delivery.login')->with('success', 'สมัครสมาชิกเรียบร้อยแล้ว UID ของคุณคือ: ' . $uid);
         }
         return redirect()->route('delivery.register')->with('error', 'สมัครสมาชิกไม่สำเร็จ');
     }
