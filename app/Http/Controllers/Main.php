@@ -17,6 +17,7 @@ use App\Models\OrdersOption;
 use App\Models\Promotion;
 use App\Models\Stock;
 use App\Models\Table;
+use App\Models\Coupon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
@@ -53,7 +54,7 @@ class Main extends Controller
                     $optionItem = [];
                     $option = MenuOption::where('menu_type_option_id', $typeOptions->id)->get();
                     foreach ($option as $options) {
-                        $optionItem[] = (object)[
+                        $optionItem[] = (object) [
                             'id' => $options->id,
                             'name' => $options->type,
                             'price' => $options->price
@@ -62,7 +63,7 @@ class Main extends Controller
                     $item[$key]['option'][$typeOptions->name] = [
                         'is_selected' => $typeOptions->is_selected,
                         'amout' => $typeOptions->amout,
-                        'items' =>  $optionItem
+                        'items' => $optionItem
                     ];
                 }
             } else {
@@ -154,6 +155,12 @@ class Main extends Controller
                         }
                     }
                 }
+                if ($request->has('coupons_code')) {
+                    $coupons = coupons::where('code', $request->input('coupons_code'))->first();
+                    if ($coupons && $coupons->isValid()) {
+                        $coupons->increment('used_count');
+                    }
+                }
             }
             $order = [
                 'is_member' => 0,
@@ -182,4 +189,34 @@ class Main extends Controller
     {
         event(new OrderCreated(['ลูกค้าเรียกจากโต้ะที่ ' . session('table_id')]));
     }
+
+    public function applyCoupons(Request $request)
+    {
+        $coupons = coupons::where('code', $request->coupons_code)->first();
+
+        if (!$coupons) {
+            return response()->json(['message' => 'coupons not found'], 404);
+        }
+
+        if (!$coupons->isValid()) {
+            return response()->json(['message' => 'coupons expired or usage limit reached'], 400);
+        }
+
+        // คำนวณส่วนลด
+        $subtotal = $request->subtotal; // รับจาก Frontend
+        if ($coupons->discount_type == 'percent') {
+            $discount = ($subtotal * $coupons->discount_value) / 100;
+        } else {
+            $discount = $coupons->discount_value;
+        }
+
+        $discount = min($discount, $subtotal); // ส่วนลดไม่เกินยอดซื้อ
+
+        return response()->json([
+            'message' => 'Coupons applied',
+            'discount' => $discount,
+            'final_total' => $subtotal - $discount
+        ]);
+    }
+
 }
