@@ -93,6 +93,7 @@ Route::middleware(['role:admin'])->group(function () {
     Route::post('/admin/order/listOrderDetailPay', [Admin::class, 'listOrderDetailPay'])->name('listOrderDetailPay');
     Route::post('/admin/order/generateQr', [Admin::class, 'generateQr'])->name('generateQr');
     Route::post('/admin/order/confirm_pay', [Admin::class, 'confirm_pay'])->name('confirm_pay');
+    Route::post('/admin/order/checkUser', [Admin::class, 'checkUser'])->name('admin.checkUser');
     Route::post('/admin/order/confirm_rider', [Admin::class, 'confirm_rider'])->name('confirm_rider');
     Route::get('/admin/order/printReceipt/{id}', [Admin::class, 'printReceipt'])->name('printReceipt');
     Route::get('/admin/order/printReceiptfull/{id}', [Admin::class, 'printReceiptfull'])->name('printReceiptfull');

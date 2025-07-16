@@ -21,6 +21,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use PromptPayQR\Builder;
+use App\Models\Coupon;
 
 class Admin extends Controller
 {
@@ -227,10 +228,25 @@ class Admin extends Controller
                 ->where('table_id', $id)
                 ->whereIn('status', [1, 2])
                 ->first();
+
+                $discount = 0;
+            $couponCode = $request->input('coupon_code');
+            if ($couponCode) {
+                $coupon = Coupon::where('code', $couponCode)->first();
+                if ($coupon && $coupon->isValid()) {
+                    if ($coupon->discount_type == 'percent') {
+                        $discount = ($total->total * $coupon->discount_value) / 100;
+                    } else {
+                        $discount = $coupon->discount_value;
+                    }
+                    $discount = min($discount, $total->total);
+                    $coupon->increment('used_count');
+                }
+            }
             $pay = new Pay();
             $pay->payment_number = $this->generateRunningNumber();
             $pay->table_id = $id;
-            $pay->total = $total->total;
+            $pay->total = $total->total - $discount;
             if ($pay->save()) {
                 $order = Orders::where('table_id', $id)->whereIn('status', [1, 2])->get();
                 foreach ($order as $rs) {
@@ -242,6 +258,16 @@ class Admin extends Controller
                         $paygroup->save();
                     }
                 }
+
+                $userId = $request->input('user_id');
+                if ($userId) {
+                    $user = User::find($userId);
+                    if ($user) {
+                        $points = floor(($total->total - $discount) / 10);
+                        $user->point += $points;
+                        $user->save();
+                    }
+                }
                 $data = [
                     'status' => true,
                     'message' => 'ชำระเงินเรียบร้อยแล้ว',
@@ -249,6 +275,20 @@ class Admin extends Controller
             }
         }
         return response()->json($data);
+    }
+    public function checkUser(Request $request)
+    {
+        $keyword = $request->input('keyword');
+        $user = User::where('UID', $keyword)->orWhere('tel', $keyword)->first();
+        if ($user) {
+            $coupons = Coupon::where(function ($q) {
+                $q->whereNull('expired_at')->orWhere('expired_at', '>', now());
+            })->where(function ($q) {
+                $q->whereNull('usage_limit')->orWhereColumn('used_count', '<', 'usage_limit');
+            })->get();
+            return response()->json(['status' => true, 'user' => $user, 'coupons' => $coupons]);
+        }
+        return response()->json(['status' => false, 'message' => 'ไม่พบผู้ใช้']);
     }
 
 

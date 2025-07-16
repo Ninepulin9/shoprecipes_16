@@ -183,6 +183,16 @@ class Delivery extends Controller
                             }
                         }
                     }
+                    // เพิ่มคะแนนสะสมให้ผู้ใช้
+                    $user = User::find(Session::get('user')->id);
+                    if ($user) {
+                        $points = floor(($total - $discount) / 10);
+                        if ($coupon && isset($couponModel) && $couponModel->isValid()) {
+                            $points += 10;
+                        }
+                        $user->point += $points;
+                        $user->save();
+                    }
                     $order = [
                         'is_member' => 0,
                         'text' => '📦 มีออเดอร์ใหม่'

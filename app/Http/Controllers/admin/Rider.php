@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 
 class Rider extends Controller
 {
@@ -88,6 +89,11 @@ class Rider extends Controller
     {
         $input = $request->input();
         if (!isset($input['id'])) {
+            // สร้าง UID ที่ unique
+            do {
+                $uid = Str::upper(Str::random(8));
+            } while (User::where('UID', $uid)->exists());
+
             $table = new User();
             $table->name = $input['name'];
             $table->email = $input['email'];
@@ -97,6 +103,8 @@ class Rider extends Controller
             $table->password = Hash::make('123456789');
             $table->remember_token = null;
             $table->is_rider = 1;
+            $table->UID = $uid;
+            $table->point = 0;
             if ($table->save()) {
                 return redirect()->route('rider')->with('success', 'บันทึกรายการเรียบร้อยแล้ว');
             }

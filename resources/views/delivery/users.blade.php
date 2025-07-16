@@ -90,6 +90,12 @@ $config = Config::first();
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-12">
+                            <label class="form-label d-flex justify-content-start">คะแนนสะสม :</label>
+                            <div class="fw-bold">{{ number_format(Session::get('user')->point) }} คะแนน</div>
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-12">
                             <button class="btn btn-sm btn-outline-primary" type="submit">บันทึก</button>
                         </div>
                     </div>

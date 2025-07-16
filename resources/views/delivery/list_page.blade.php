@@ -93,6 +93,9 @@ $config = Config::first();
             คำสั่งซื้อ
         </div>
         @if(Session::get('user'))
+        <div class="alert alert-info">คะแนนสะสม: {{ number_format(Session::get('user')->point) }} คะแนน</div>
+        @endif
+        @if(Session::get('user'))
         <div class="card">
             <div class="card-header">ข้อมูลที่อยู่</div>
             <div class="card-body">

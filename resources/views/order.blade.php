@@ -110,8 +110,20 @@
                             </div>
                             <div class="col-12 d-flex justify-content-center mb-3" id="qr_code">
                             </div>
+                            <div class="col-12 text-center mb-1" id="discounted"></div>
+                            <div class="col-8 mb-2">
+                                <input type="text" id="member_search" class="form-control" placeholder="เบอร์โทรหรือ UID">
+                            </div>
+                            <div class="col-4 mb-2">
+                                <button type="button" class="btn btn-outline-secondary" id="check_member">ตรวจสอบ</button>
+                            </div>
+                            <div class="col-12 mb-2" id="member_info" style="display:none;"></div>
+                            <div class="col-12 mb-2" id="coupon_box" style="display:none;">
+                                <select id="coupon_select" class="form-control"></select>
+                            </div>
                         </div>
                         <input type="hidden" id="table_id">
+                        <input type="hidden" id="member_id">
                     </div>
                 </div>
             </div>
@@ -373,6 +385,56 @@
                 $('#totalPay').html(total + ' บาท');
                 $('#qr_code').html(response);
                 $('#table_id').val(id);
+                $('#member_search').val('');
+                $('#member_id').val('');
+                $('#member_info').hide().text('');
+                $('#coupon_box').hide();
+            }
+        });
+    });
+
+    $('#check_member').click(function () {
+        $.ajax({
+            url: "{{ route('admin.checkUser') }}",
+            type: "post",
+            data: { keyword: $('#member_search').val() },
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            success: function (res) {
+                if (res.status) {
+                    $('#member_id').val(res.user.id);
+                    $('#member_info').show().text(res.user.name + ' (' + res.user.email + ') คะแนน ' + res.user.point);
+                    $('#coupon_select').empty();
+                    $('#coupon_select').append('<option value="">ไม่ใช้คูปอง</option>');
+                    res.coupons.forEach(function(c){
+                        $('#coupon_select').append('<option value="'+c.code+'">'+c.code+'</option>');
+                    });
+                    $('#coupon_box').show();
+                } else {
+                    $('#member_id').val('');
+                    $('#member_info').show().text(res.message);
+                    $('#coupon_box').hide();
+                }
+            }
+        });
+    });
+
+    $('#coupon_select').change(function(){
+        var code = $(this).val();
+        if(!code){
+            $('#discounted').text('');
+            return;
+        }
+        $.ajax({
+            type:"post",
+            url:"{{ route('checkCoupon') }}",
+            data:{code:code, subtotal: parseFloat($('#totalPay').text().replace(' บาท',''))},
+            headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'},
+            success:function(res){
+                if(res.status){
+                    $('#discounted').text(res.final_total + ' บาทหลังส่วนลด');
+                }else{
+                    $('#discounted').text('');
+                }
             }
         });
     });
@@ -388,11 +450,15 @@
     $('#confirm_pay').click(function(e) {
         e.preventDefault();
         var id = $('#table_id').val();
+        var userId = $('#member_id').val();
+        var couponCode = $('#coupon_select').val();
         $.ajax({
             url: "{{route('confirm_pay')}}",
             type: "post",
             data: {
-                id: id
+                id: id,
+                user_id: userId,
+                coupon_code: couponCode
             },
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
