@@ -99,6 +99,11 @@
                     รายการอาหารที่สั่ง
                 </div>
                 <div id="order-summary" class="mt-2"></div>
+                <div class="input-group mt-3">
+                    <input type="text" id="coupon" class="form-control" placeholder="กรอกเลขคูปอง">
+                    <button class="btn btn-outline-primary" type="button" id="check-coupon-btn">ตรวจสอบ</button>
+                </div>
+                <div id="coupon-message" class="text-danger small mt-1"></div>
                 <div class="fw-bold fs-5 mt-5 " style="border-top:2px solid #7e7e7e; margin-bottom:-10px;">
                     ยอดชำระ
                 </div>
@@ -206,6 +211,8 @@
             renderOrderList();
 
             const confirmButton = document.getElementById('confirm-order-btn');
+            const checkCouponBtn = document.getElementById('check-coupon-btn');
+            const couponMsg = document.getElementById('coupon-message');
 
             function toggleConfirmButton(cart) {
                 if (Object.keys(cart).length > 0) {
@@ -218,6 +225,30 @@
 
             toggleConfirmButton(cart);
 
+            checkCouponBtn.addEventListener('click', function () {
+                $.ajax({
+                    type: "post",
+                    url: "{{ route('checkCoupon') }}",
+                    data: {
+                        code: $('#coupon').val()
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    dataType: "json",
+                    success: function (response) {
+                        if (response.status) {
+                            couponMsg.classList.remove('text-danger');
+                            couponMsg.classList.add('text-success');
+                        } else {
+                            couponMsg.classList.remove('text-success');
+                            couponMsg.classList.add('text-danger');
+                        }
+                        couponMsg.textContent = response.message;
+                    }
+                });
+            });
+
             confirmButton.addEventListener('click', function(event) {
                 event.preventDefault();
                 if (Object.keys(cart).length > 0) {
@@ -226,7 +257,8 @@
                         url: "{{ route('SendOrder') }}",
                         data: {
                             cart: cart,
-                            remark: $('#remark').val()
+                            remark: $('#remark').val(),
+                            coupon: $('#coupon').val()
                         },
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'

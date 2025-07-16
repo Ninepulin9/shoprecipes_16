@@ -19,6 +19,7 @@ use App\Models\Stock;
 use App\Models\Table;
 use App\Models\Coupon;
 use Illuminate\Http\Request;
+use App\Models\UserCoupon;
 use Illuminate\Support\Facades\Session;
 
 class Main extends Controller
@@ -87,6 +88,7 @@ class Main extends Controller
         ];
         $orderData = $request->input('cart');
         $remark = $request->input('remark');
+        $coupon = $request->input('coupon');
         $item = array();
         $menu_id = array();
         $categories_id = array();
@@ -156,7 +158,7 @@ class Main extends Controller
                     }
                 }
                 if ($request->has('coupons_code')) {
-                    $coupons = coupons::where('code', $request->input('coupons_code'))->first();
+                    $coupons = Coupon::where('code', $request->input('coupons_code'))->first();
                     if ($coupons && $coupons->isValid()) {
                         $coupons->increment('used_count');
                     }
@@ -185,6 +187,16 @@ class Main extends Controller
         return response()->json($data);
     }
 
+    public function checkCoupon(Request $request)
+    {
+        $code = $request->input('code');
+        $coupon = UserCoupon::where('code', $code)->first();
+        if ($coupon) {
+            return response()->json(['status' => true, 'message' => 'คูปองสามารถใช้งานได้']);
+        }
+        return response()->json(['status' => false, 'message' => 'ไม่พบคูปองนี้']);
+    }
+
     public function sendEmp()
     {
         event(new OrderCreated(['ลูกค้าเรียกจากโต้ะที่ ' . session('table_id')]));
@@ -192,7 +204,7 @@ class Main extends Controller
 
     public function applyCoupons(Request $request)
     {
-        $coupons = coupons::where('code', $request->coupons_code)->first();
+        $coupons = Coupon::where('code', $request->coupons_code)->first();
 
         if (!$coupons) {
             return response()->json(['message' => 'coupons not found'], 404);

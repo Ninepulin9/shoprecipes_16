@@ -35,6 +35,7 @@ Route::get('/', [Main::class, 'index'])->name('index');
 Route::get('/order', [Main::class, 'order'])->name('order');
 Route::post('/sendEmp', [Main::class, 'sendEmp'])->name('sendEmp');
 Route::post('/sendorder', [Main::class, 'SendOrder'])->name('SendOrder');
+Route::post('/checkCoupon', [Main::class, 'checkCoupon'])->name('checkCoupon');
 Route::get('/detail/{id}', [Main::class, 'detail'])->name('detail');
 Route::get('/detail', function () {
     return redirect()->route('index');

@@ -17,6 +17,7 @@ use App\Models\OrdersOption;
 use App\Models\Promotion;
 use App\Models\Stock;
 use App\Models\User;
+use App\Models\UserCoupon;
 use App\Models\UsersAddress;
 use App\Models\Categories_member;
 use App\Models\UsersCategories;
@@ -100,6 +101,7 @@ class Delivery extends Controller
         if (Session::get('user')) {
             $orderData = $request->input('cart');
             $remark = $request->input('remark');
+            $coupon = $request->input('coupon');
             $item = array();
             $menu_id = array();
             $categories_id = array();
