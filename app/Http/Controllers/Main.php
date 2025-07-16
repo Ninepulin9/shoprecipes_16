@@ -98,7 +98,7 @@ class Main extends Controller
                 'menu_id' => $order['id'],
                 'quantity' => $order['amount'],
                 'price' => $order['total_price'],
-                'note' => $order['note']
+                'note' => $order['note'] ?? '',
             ];
             if (!empty($order['options'])) {
                 foreach ($order['options'] as $rs) {
@@ -149,14 +149,14 @@ class Main extends Controller
                             if ($menuStock->isNotEmpty()) {
                                 foreach ($menuStock as $stock_rs) {
                                     $stock = Stock::find($stock_rs->stock_id);
-                                    $stock->amount = $stock->amount - ($stock_rs->amount * $rs['qty']);
+                                    $stock->amount = $stock->amount - ($stock_rs->amount * $rs['quantity']);
                                     if ($stock->save()) {
                                         $log_stock = new LogStock();
                                         $log_stock->stock_id = $stock_rs->stock_id;
                                         $log_stock->order_id = $order->id;
                                         $log_stock->menu_option_id = $rs['option'];
                                         $log_stock->old_amount = $stock_rs->amount;
-                                        $log_stock->amount = ($stock_rs->amount * $rs['qty']);
+                                        $log_stock->amount = ($stock_rs->amount * $rs['quantity']);
                                         $log_stock->status = 2;
                                         $log_stock->save();
                                     }
