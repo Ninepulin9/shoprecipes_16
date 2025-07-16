@@ -110,6 +110,9 @@
                 <div class="fw-bold text-center" style="font-size:45px; ">
                     <span id="total-price" style="color: #0d9700"></span><span class="text-dark ms-2">บาท</span>
                 </div>
+                <div id="discounted-box" class="fw-bold text-center" style="font-size:45px; display:none;">
+                    <span id="discounted-price" style="color: #0d9700"></span><span class="text-dark ms-2">บาทหลังส่วนลด</span>
+                </div>
             </div>
 
             <a href="javascript:void(0);" class="btn-aprove mt-3" id="confirm-order-btn"
@@ -213,6 +216,8 @@
             const confirmButton = document.getElementById('confirm-order-btn');
             const checkCouponBtn = document.getElementById('check-coupon-btn');
             const couponMsg = document.getElementById('coupon-message');
+            const discountedPriceEl = document.getElementById('discounted-price');
+            const discountedBox = document.getElementById('discounted-box');
 
             function toggleConfirmButton(cart) {
                 if (Object.keys(cart).length > 0) {
@@ -230,7 +235,8 @@
                     type: "post",
                     url: "{{ route('checkCoupon') }}",
                     data: {
-                        code: $('#coupon').val()
+                        code: $('#coupon').val(),
+                        subtotal: parseFloat(totalPriceEl.textContent.replace(/,/g, ''))
                     },
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -240,9 +246,12 @@
                         if (response.status) {
                             couponMsg.classList.remove('text-danger');
                             couponMsg.classList.add('text-success');
+                            discountedPriceEl.textContent = parseFloat(response.final_total).toLocaleString();
+                            discountedBox.style.display = 'block';
                         } else {
                             couponMsg.classList.remove('text-success');
                             couponMsg.classList.add('text-danger');
+                            discountedBox.style.display = 'none';
                         }
                         couponMsg.textContent = response.message;
                     }

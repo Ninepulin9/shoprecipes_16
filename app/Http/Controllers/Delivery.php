@@ -25,6 +25,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
+use App\Models\Coupon;
 
 class Delivery extends Controller
 {
@@ -132,10 +133,18 @@ class Delivery extends Controller
             if (!empty($item)) {
                 $info = UsersAddress::where('is_use', 1)->where('users_id', Session::get('user')->id)->first();
                 if ($info != null) {
+                    $discount = 0;
+                    if ($coupon) {
+                        $couponModel = Coupon::where('code', $coupon)->first();
+                        if ($couponModel && $couponModel->isValid()) {
+                            $discount = $this->calculateDiscount($couponModel, $total);
+                            $couponModel->increment('used_count');
+                        }
+                    }
                     $order = new Orders();
                     $order->users_id = Session::get('user')->id;
                     $order->address_id = $info->id;
-                    $order->total = $total;
+                    $order->total = $total - $discount;
                     $order->remark = $remark;
                     $order->status = 1;
                     if ($order->save()) {
@@ -330,7 +339,7 @@ class Delivery extends Controller
     }
 
     public function UsersRegister(Request $request)
-{
+    {
     $input = $request->input();
     
     // ตรวจสอบ email ซ้ำ
@@ -375,5 +384,18 @@ class Delivery extends Controller
         return redirect()->route('delivery.login')->with('success', 'สมัครสมาชิกเรียบร้อยแล้ว UID ของคุณคือ: ' . $uid);
     }
     return redirect()->route('delivery.register')->with('error', 'สมัครสมาชิกไม่สำเร็จ');
-}
+    }
+
+    private function calculateDiscount(Coupon $coupon, $subtotal)
+    {
+        if ($coupon->discount_type == 'percent') {
+            $discount = ($subtotal * $coupon->discount_value) / 100;
+        } else {
+            $discount = $coupon->discount_value;
+        }
+
+        $discount = min($discount, $subtotal);
+
+        return $discount;
+    }
 }

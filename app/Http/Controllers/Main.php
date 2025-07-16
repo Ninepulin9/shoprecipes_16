@@ -118,9 +118,17 @@ class Main extends Controller
         $categories_id = array_unique($categories_id);
 
         if (!empty($item)) {
+            $discount = 0;
+            if ($coupon) {
+                $couponModel = Coupon::where('code', $coupon)->first();
+                if ($couponModel && $couponModel->isValid()) {
+                    $discount = $this->calculateDiscount($couponModel, $total);
+                    $couponModel->increment('used_count');
+                }
+            }
             $order = new Orders();
             $order->table_id = session('table_id') ?? '1';
-            $order->total = $total;
+            $order->total = $total - $discount;
             $order->remark = $remark;
             $order->status = 1;
             if ($order->save()) {
@@ -157,12 +165,7 @@ class Main extends Controller
                         }
                     }
                 }
-                if ($request->has('coupons_code')) {
-                    $coupons = Coupon::where('code', $request->input('coupons_code'))->first();
-                    if ($coupons && $coupons->isValid()) {
-                        $coupons->increment('used_count');
-                    }
-                }
+                
             }
             $order = [
                 'is_member' => 0,
@@ -190,11 +193,24 @@ class Main extends Controller
     public function checkCoupon(Request $request)
     {
         $code = $request->input('code');
-        $coupon = UserCoupon::where('code', $code)->first();
-        if ($coupon) {
-            return response()->json(['status' => true, 'message' => 'คูปองสามารถใช้งานได้']);
+        $subtotal = $request->input('subtotal');
+
+        $coupon = Coupon::where('code', $code)->first();
+        if (!$coupon) {
+            return response()->json(['status' => false, 'message' => 'ไม่พบคูปองนี้']);
         }
-        return response()->json(['status' => false, 'message' => 'ไม่พบคูปองนี้']);
+        if (!$coupon->isValid()) {
+            return response()->json(['status' => false, 'message' => 'คูปองหมดอายุหรือใช้งานครบแล้ว']);
+        }
+
+        $discount = $this->calculateDiscount($coupon, $subtotal);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'ใช้คูปองเรียบร้อยแล้ว',
+            'discount' => $discount,
+            'final_total' => $subtotal - $discount
+        ]);
     }
 
     public function sendEmp()
@@ -229,6 +245,18 @@ class Main extends Controller
             'discount' => $discount,
             'final_total' => $subtotal - $discount
         ]);
+    }
+    private function calculateDiscount(Coupon $coupon, $subtotal)
+    {
+        if ($coupon->discount_type == 'percent') {
+            $discount = ($subtotal * $coupon->discount_value) / 100;
+        } else {
+            $discount = $coupon->discount_value;
+        }
+
+        $discount = min($discount, $subtotal);
+
+        return $discount;
     }
 
 }

@@ -145,6 +145,9 @@ $config = Config::first();
             <div class="fw-bold text-center" style="font-size:45px; ">
                 <span id="total-price" style="color: #0d9700"></span><span class="text-dark ms-2">บาท</span>
             </div>
+            <div id="discounted-box" class="fw-bold text-center" style="font-size:45px; display:none;">
+                <span id="discounted-price" style="color: #0d9700"></span><span class="text-dark ms-2">บาทหลังส่วนลด</span>
+            </div>
         </div>
         <div class="bg-white p-2 shadow-lg mt-3" style="border-radius:20px;">
             <textarea class="form-control fw-bold text-center bg-white p-2" style="border-radius: 20px;" rows="4"
@@ -152,8 +155,7 @@ $config = Config::first();
 </textarea>
         </div>
         @if(Session::get('user'))
-        <a href="javascript:void(0);" class="btn-aprove mt-3" id="confirm-order-btn"
-            style="display: none;">ยืนยันคำสั่งซื้อ</a>
+        <button type="button" class="btn-aprove mt-3" id="confirm-order-btn" style="display: none;">ยืนยันคำสั่งซื้อ</button>
         @endif
     </div>
 </div>
@@ -252,9 +254,11 @@ $config = Config::first();
         const confirmButton = document.getElementById('confirm-order-btn');
         const checkCouponBtn = document.getElementById('check-coupon-btn');
         const couponMsg = document.getElementById('coupon-message');
+        const discountedBox = document.getElementById('discounted-box');
+        const discountedPriceEl = document.getElementById('discounted-price');
 
         function toggleConfirmButton(cart) {
-            if (Object.keys(cart).length > 0) {
+            if (cart.length > 0) {
                 confirmButton.style.display = 'inline-block';
             } else {
                 confirmButton.style.display = 'none';
@@ -267,16 +271,22 @@ $config = Config::first();
             $.ajax({
                 type: "post",
                 url: "{{ route('checkCoupon') }}",
-                data: { code: $('#coupon').val() },
+                data: { 
+                    code: $('#coupon').val(),
+                    subtotal: parseFloat(totalPriceEl.textContent.replace(/,/g, ''))
+                },
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 dataType: "json",
                 success: function (response) {
                     if (response.status) {
                         couponMsg.classList.remove('text-danger');
                         couponMsg.classList.add('text-success');
+                        discountedPriceEl.textContent = parseFloat(response.final_total).toLocaleString();
+                        discountedBox.style.display = 'block';
                     } else {
                         couponMsg.classList.remove('text-success');
                         couponMsg.classList.add('text-danger');
+                        discountedBox.style.display = 'none';
                     }
                     couponMsg.textContent = response.message;
                 }
