@@ -201,7 +201,7 @@ class Member extends Controller
     return response()->json($data);
 }
 
-    public function userSave(Request $request)
+   public function userSave(Request $request)
 {
     $input = $request->input();
 
@@ -221,7 +221,7 @@ class Member extends Controller
         $table->password = Hash::make('123456789');
         $table->remember_token = null;
         $table->is_member = 0;
-        $table->point = 0; // เพิ่ม point เริ่มต้น 0
+        $table->point = 0;
 
         if ($table->save()) {
             $categories = new UsersCategories();
@@ -237,15 +237,20 @@ class Member extends Controller
             $table->name = $input['name'];
             $table->email = $input['email'];
             $table->tel = $input['tel'];
+            $table->point = $input['point'] ?? 0;
 
             if ($table->save()) {
                 $categories = UsersCategories::where('users_id', $input['id'])->first();
                 if ($categories) {
                     $categories->categories_id = $input['categories_id'];
-                    if ($categories->save()) {
-                        return redirect()->route('user')->with('success', 'อัพเดทข้อมูล user เรียบร้อยแล้ว');
-                    }
+                    $categories->save();
+                } else {
+                    $categories = new UsersCategories();
+                    $categories->users_id = $input['id'];
+                    $categories->categories_id = $input['categories_id'];
+                    $categories->save();
                 }
+                return redirect()->route('user')->with('success', 'อัพเดทข้อมูล user เรียบร้อยแล้ว');
             }
         } else {
             return redirect()->route('user')->with('error', 'ไม่พบข้อมูล user');
@@ -255,17 +260,30 @@ class Member extends Controller
     return redirect()->route('user')->with('error', 'ไม่สามารถบันทึกข้อมูลได้');
 }
     public function userEdit($id)
-    {
-        $function_key = 'user';
-        $categories = Categories_member::get();
-        $info = User::with('categories')->where('id', $id)->where('role', 'user')->first();
+{
+    $function_key = 'user';
+    $categories = Categories_member::get();
+    $info = User::with('categories.categories')->where('id', $id)->where('role', 'user')->first();
 
-        if (!$info) {
-            return redirect()->route('user')->with('error', 'ไม่พบข้อมูล user');
-        }
-
-        return view('member.edit', compact('info', 'function_key', 'categories'));
+    if (!$info) {
+        return redirect()->route('user')->with('error', 'ไม่พบข้อมูล user');
     }
+
+    if (!$info->categories) {
+        $newUserCategory = Categories_member::where('name', 'NewUser')->first();
+        if ($newUserCategory) {
+            $userCategory = new UsersCategories();
+            $userCategory->users_id = $info->id;
+            $userCategory->categories_id = $newUserCategory->id;
+            $userCategory->save();
+            
+            $info = User::with('categories.categories')->where('id', $id)->where('role', 'user')->first();
+        }
+    }
+
+    return view('member.user_edit', compact('info', 'function_key', 'categories'));
+}
+
     public function checkEmailExists(Request $request)
 {
     $email = $request->input('email');
