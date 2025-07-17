@@ -94,11 +94,12 @@ public function SendOrder(Request $request)
     $menu_id = array();
     $categories_id = array();
     $total = 0;
+    
     foreach ($orderData as $key => $order) {
         $item[$key] = [
             'menu_id' => $order['id'],
             'quantity' => $order['amount'],
-            'price' => $order['total_price'],
+            'price' => $order['total_price'], // ✅ ราคารวมของ item นี้แล้ว
             'note' => $order['note'] ?? '',
         ];
         if (!empty($order['options'])) {
@@ -108,9 +109,10 @@ public function SendOrder(Request $request)
         } else {
             $item[$key]['option'] = [];
         }
-        $total = $total + $order['total_price'];
+        $total = $total + $order['total_price']; // ✅ บวกยอดรวมทั้งหมด
         $menu_id[] = $order['id'];
     }
+    
     $menu_id = array_unique($menu_id);
     foreach ($menu_id as $rs) {
         $menu = Menu::find($rs);
@@ -120,34 +122,42 @@ public function SendOrder(Request $request)
 
     if (!empty($item)) {
         $discount = 0;
+        
+        // ✅ คำนวณส่วนลดจากยอดรวมทั้งหมด (ครั้งเดียว)
         if ($coupon) {
             $couponModel = Coupon::where('code', $coupon)->first();
             if ($couponModel && $couponModel->isValid()) {
-                // ✅ ใช้ method จาก Model แทนการเรียก calculateDiscount เก่า
+                // ใช้ method จาก Model ที่จัดการคูปอง Point ถูกต้องแล้ว
                 $discount = $couponModel->calculateDiscount($total);
                 $couponModel->incrementUsage();
             }
         }
+        
+        // ✅ สร้างออเดอร์หลักแค่ครั้งเดียว
         $order = new Orders();
         $order->table_id = session('table_id') ?? '1';
-        $order->total = $total - $discount;
+        $order->total = $total - $discount; // ✅ ยอดรวม - ส่วนลด (ครั้งเดียว)
         $order->remark = $remark;
         $order->status = 1;
+        
         if ($order->save()) {
-            // ... ส่วนที่เหลือเหมือนเดิม
+            // ✅ บันทึกรายละเอียดแต่ละ item (ไม่คำนวณส่วนลดซ้ำ)
             foreach ($item as $rs) {
                 $orderdetail = new OrdersDetails();
                 $orderdetail->order_id = $order->id;
                 $orderdetail->menu_id = $rs['menu_id'];
                 $orderdetail->quantity = $rs['quantity'];
-                $orderdetail->price = $rs['price'];
+                $orderdetail->price = $rs['price']; // ✅ ราคาต้นฉบับ ไม่หักส่วนลด
                 $orderdetail->remark = $rs['note'];
+                
                 if ($orderdetail->save()) {
                     foreach ($rs['option'] as $key => $option) {
                         $orderOption = new OrdersOption();
                         $orderOption->order_detail_id = $orderdetail->id;
                         $orderOption->option_id = $option;
                         $orderOption->save();
+                        
+                        // จัดการ stock
                         $menuStock = MenuStock::where('menu_option_id', $option)->get();
                         if ($menuStock->isNotEmpty()) {
                             foreach ($menuStock as $stock_rs) {
@@ -169,11 +179,14 @@ public function SendOrder(Request $request)
                 }
             }
         }
+        
+        // Event notifications
         $order = [
             'is_member' => 0,
             'text' => '📦 มีออเดอร์ใหม่'
         ];
         event(new OrderCreated($order));
+        
         if (!empty($categories_id)) {
             foreach ($categories_id as $rs) {
                 $order = [
@@ -184,6 +197,7 @@ public function SendOrder(Request $request)
                 event(new OrderCreated($order));
             }
         }
+        
         $data = [
             'status' => true,
             'message' => 'สั่งออเดอร์เรียบร้อยแล้ว',
@@ -205,9 +219,21 @@ public function SendOrder(Request $request)
     if ($code && $subtotal > 0) {
         $coupon = Coupon::where('code', $code)->first();
         
-        if ($coupon && $coupon->isValid()) {
+        if ($coupon) {
+            // ✅ ตรวจสอบว่าคูปองหมดอายุหรือใช้หมดแล้ว
+            if (!$coupon->isValid()) {
+                $data['message'] = 'คูปองหมดอายุแล้วหรือใช้ครบจำนวนที่กำหนด';
+                return response()->json($data);
+            }
+            
+            // ✅ ตรวจสอบว่าคูปองถูกใช้ไปแล้วหรือไม่ (ตรวจสอบ used_count)
+            if ($coupon->usage_limit && $coupon->used_count >= $coupon->usage_limit) {
+                $data['message'] = 'คูปองนี้ถูกใช้ครบจำนวนแล้ว';
+                return response()->json($data);
+            }
+            
             $discount = $coupon->calculateDiscount($subtotal);
-            $bonusPoints = $coupon->getBonusPoints();   
+            $bonusPoints = $coupon->getBonusPoints();
             
             $data = [
                 'status' => true,
@@ -218,6 +244,8 @@ public function SendOrder(Request $request)
                 'final_total' => $subtotal - $discount,
                 'original_total' => $subtotal
             ];
+        } else {
+            $data['message'] = 'ไม่พบคูปองนี้ในระบบ';
         }
     }
 

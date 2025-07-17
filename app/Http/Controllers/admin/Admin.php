@@ -209,7 +209,6 @@ class Admin extends Controller
         }
         return redirect()->route('config')->with('error', 'ไม่สามารถบันทึกข้อมูลได้');
     }
-
 public function confirm_pay(Request $request)
 {
     $data = [
@@ -217,6 +216,7 @@ public function confirm_pay(Request $request)
         'message' => 'ชำระเงินไม่สำเร็จ',
     ];
     $id = $request->input('id');
+    
     if ($id) {
         $total = DB::table('orders as o')
             ->select(
@@ -233,44 +233,59 @@ public function confirm_pay(Request $request)
         $bonusPoints = 0;
         $couponCode = $request->input('coupon_code');
         $couponModel = null;
+        $orderHasCoupon = false;
         
-        if ($couponCode) {
-            $couponModel = Coupon::where('code', $couponCode)->first();
-            if ($couponModel && $couponModel->isValid()) {
-                
-                // 🔍 Debug: เพิ่ม Log เพื่อตรวจสอบ
-                \Log::info('Coupon Debug', [
-                    'code' => $couponModel->code,
-                    'type' => $couponModel->discount_type,
-                    'value' => $couponModel->discount_value,
-                    'order_total' => $total->total
+        // ✅ ตรวจสอบว่ามีออเดอร์ที่ใช้คูปองแล้วหรือไม่
+        $existingCouponOrder = Orders::where('table_id', $id)
+            ->whereIn('status', [1, 2])
+            ->whereNotNull('coupon_code')
+            ->first();
+        
+        if ($existingCouponOrder) {
+            $orderHasCoupon = true;
+            // ✅ ถ้ามีคูปองจากตอนสั่งแล้ว
+            if ($couponCode) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'ออเดอร์นี้ใช้คูปอง "' . $existingCouponOrder->coupon_code . '" ไปแล้ว ไม่สามารถใช้คูปองเพิ่มได้',
                 ]);
-                
-                // ✅ ตรวจสอบประเภทคูปองอย่างชัดเจน
-                if ($couponModel->discount_type === 'point') {
-                    // คูปอง Point: ไม่ลดราคา แต่ให้ Point
-                    $discount = 0;
-                    $bonusPoints = $couponModel->discount_value;
-                    \Log::info('Point Coupon Applied', ['bonus_points' => $bonusPoints]);
-                } else {
-                    // คูปองส่วนลด: ใช้ method จาก Model
-                    $discount = $couponModel->calculateDiscount($total->total);
-                    $bonusPoints = 0;
-                    \Log::info('Discount Coupon Applied', ['discount' => $discount]);
+            }
+            
+            // ✅ ใช้ข้อมูลคูปองจากออเดอร์เดิม
+            $existingCoupon = Coupon::where('code', $existingCouponOrder->coupon_code)->first();
+            if ($existingCoupon) {
+                $discount = $existingCouponOrder->discount_amount ?? 0;
+                $bonusPoints = $existingCoupon->getBonusPoints();
+            }
+            
+        } else if ($couponCode) {
+            // ✅ ถ้าไม่มีคูปองจากตอนสั่ง และมีคูปองจากตอนชำระ
+            $couponModel = Coupon::where('code', $couponCode)->first();
+            
+            if ($couponModel) {
+                if (!$couponModel->isValid()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'คูปองหมดอายุแล้วหรือใช้ครบจำนวนที่กำหนด',
+                    ]);
                 }
                 
-                // เพิ่มจำนวนการใช้งานคูปอง
+                $discount = $couponModel->calculateDiscount($total->total);
+                $bonusPoints = $couponModel->getBonusPoints();
                 $couponModel->incrementUsage();
+                
+                // ✅ อัพเดท orders ให้มีข้อมูลคูปอง
+                Orders::where('table_id', $id)->whereIn('status', [1, 2])->update([
+                    'coupon_code' => $couponCode,
+                    'discount_amount' => $discount,
+                ]);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'ไม่พบคูปองนี้ในระบบ',
+                ]);
             }
         }
-        
-        // 🔍 Debug: ตรวจสอบค่าก่อนบันทึก
-        \Log::info('Payment Calculation', [
-            'original_total' => $total->total,
-            'discount' => $discount,
-            'final_total' => $total->total - $discount,
-            'bonus_points' => $bonusPoints
-        ]);
         
         $pay = new Pay();
         $pay->payment_number = $this->generateRunningNumber();
@@ -293,26 +308,41 @@ public function confirm_pay(Request $request)
             if ($userId) {
                 $user = User::find($userId);
                 if ($user) {
-                    // คำนวณ Point ปกติจากการซื้อ
+                    // ✅ คำนวณ Point ปกติจากการซื้อ (ใช้ยอดหลังหักส่วนลด)
                     $normalPoints = floor(($total->total - $discount) / 10);
                     
-                    // รวม Point ปกติ + Point โบนัส
-                    $totalPoints = $normalPoints + $bonusPoints;
+                    // ✅ รวม Point ปกติ + Point โบนัสจากคูปอง + Point เดิมที่มี
+                    $oldPoints = $user->point; // Point เดิม
+                    $totalNewPoints = $normalPoints + $bonusPoints; // Point ใหม่ทั้งหมด
+                    $finalPoints = $oldPoints + $totalNewPoints; // Point รวม
                     
-                    \Log::info('Points Calculation', [
-                        'normal_points' => $normalPoints,
-                        'bonus_points' => $bonusPoints,
-                        'total_points' => $totalPoints
-                    ]);
-                    
-                    $user->point += $totalPoints;
+                    $user->point = $finalPoints;
                     $user->save();
+                    
+                    \Log::info('Points Calculation Detail', [
+                        'user_id' => $userId,
+                        'old_points' => $oldPoints,
+                        'normal_points_earned' => $normalPoints,
+                        'bonus_points_from_coupon' => $bonusPoints,
+                        'total_new_points' => $totalNewPoints,
+                        'final_points' => $finalPoints,
+                        'order_total' => $total->total,
+                        'discount' => $discount,
+                        'coupon_used' => $orderHasCoupon ? $existingCouponOrder->coupon_code : $couponCode
+                    ]);
                 }
             }
             
+            // ✅ สร้างข้อความแจ้งผลที่ละเอียด
             $message = 'ชำระเงินเรียบร้อยแล้ว';
-            if ($bonusPoints > 0) {
-                $message .= ' และได้รับ Point โบนัส ' . number_format($bonusPoints) . ' Point';
+            
+            if ($userId && isset($user)) {
+                $message .= ' | Point: ' . number_format($oldPoints) . ' → ' . number_format($finalPoints);
+                $message .= ' (ได้รับ +' . number_format($totalNewPoints) . ')';
+                
+                if ($bonusPoints > 0) {
+                    $message .= ' รวมโบนัส ' . number_format($bonusPoints) . ' Point';
+                }
             }
             
             $data = [
@@ -323,6 +353,8 @@ public function confirm_pay(Request $request)
     }
     return response()->json($data);
 }
+
+
     public function checkUser(Request $request)
     {
         $keyword = $request->input('keyword');

@@ -71,20 +71,13 @@
 
         .btn-edit {
             background: transparent;
-            /* ไม่มีพื้นหลัง */
             color: rgb(206, 0, 0);
-            /* ตัวหนังสือสีแดง */
             border: none;
-            /* ไม่มีเส้นขอบ */
             font-size: 12px;
-            /* ขนาดตัวอักษร */
             text-decoration: underline;
-            /* มีเส้นใต้ */
             padding: 0;
-            /* เอา padding ออกเพื่อไม่ให้เกินขอบ */
             margin-top: -8px;
             cursor: pointer;
-            /* เปลี่ยนเมาส์เป็น pointer */
         }
     </style>
 
@@ -102,8 +95,15 @@
                 <div class="input-group mt-3">
                     <input type="text" id="coupon" class="form-control" placeholder="กรอกเลขคูปอง">
                     <button class="btn btn-outline-primary" type="button" id="check-coupon-btn">ตรวจสอบ</button>
+                    <!-- ✅ เพิ่มปุ่มยกเลิกคูปอง -->
+                    <button class="btn btn-outline-danger" type="button" id="cancel-coupon-btn" style="display:none;">ยกเลิก</button>
                 </div>
                 <div id="coupon-message" class="text-danger small mt-1"></div>
+                <!-- ✅ เพิ่มข้อความแสดงคูปองที่ใช้ -->
+                <div id="applied-coupon" class="alert alert-success mt-2" style="display:none;">
+                    <strong>ใช้คูปอง:</strong> <span id="coupon-code-display"></span>
+                    <span id="coupon-benefit"></span>
+                </div>
                 <div class="fw-bold fs-5 mt-5 " style="border-top:2px solid #7e7e7e; margin-bottom:-10px;">
                     ยอดชำระ
                 </div>
@@ -126,13 +126,24 @@
         document.addEventListener("DOMContentLoaded", function() {
             const container = document.getElementById('order-summary');
             const totalPriceEl = document.getElementById('total-price');
+            const checkCouponBtn = document.getElementById('check-coupon-btn');
+            const cancelCouponBtn = document.getElementById('cancel-coupon-btn');
+            const couponInput = document.getElementById('coupon');
+            const couponMsg = document.getElementById('coupon-message');
+            const discountedBox = document.getElementById('discounted-box');
+            const discountedPriceEl = document.getElementById('discounted-price');
+            const appliedCouponBox = document.getElementById('applied-coupon');
+            const couponCodeDisplay = document.getElementById('coupon-code-display');
+            const couponBenefit = document.getElementById('coupon-benefit');
+            
             let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            console.log(cart)
+            let appliedCoupon = null; // ✅ เก็บข้อมูลคูปองที่ใช้
+            let originalTotal = 0;
 
             function renderOrderList() {
-
                 container.innerHTML = '';
                 let total = 0;
+                
                 if (cart.length === 0) {
                     const noItemsMessage = document.createElement('div');
                     noItemsMessage.textContent = "ท่านยังไม่ได้เลือกสินค้า";
@@ -158,8 +169,7 @@
                                 '-';
 
                             const row = document.createElement('div');
-                            row.className =
-                                'row justify-content-between align-items-start fs-6 mb-2 text-start px-1';
+                            row.className = 'row justify-content-between align-items-start fs-6 mb-2 text-start px-1';
 
                             const leftCol = document.createElement('div');
                             leftCol.className = 'col-9 d-flex flex-column justify-content-start lh-sm';
@@ -203,40 +213,88 @@
                             container.appendChild(row);
                         });
 
-
                         total += totalPrice;
                     }
                 }
 
+                originalTotal = total;
                 totalPriceEl.textContent = total.toLocaleString();
+                
+                // ✅ อัพเดทการแสดงราคาตามคูปอง
+                updatePriceDisplay();
             }
 
-            renderOrderList();
+            // ✅ ฟังก์ชันอัพเดทการแสดงราคา
+            function updatePriceDisplay() {
+                if (appliedCoupon) {
+                    if (appliedCoupon.coupon_type === 'point') {
+                        // คูปอง Point: ไม่ลดราคา
+                        discountedBox.style.display = 'none';
+                        totalPriceEl.textContent = originalTotal.toLocaleString();
+                    } else {
+                        // คูปองส่วนลด: แสดงราคาหลังส่วนลด
+                        discountedPriceEl.textContent = parseFloat(appliedCoupon.final_total).toLocaleString();
+                        discountedBox.style.display = 'block';
+                    }
+                } else {
+                    discountedBox.style.display = 'none';
+                    totalPriceEl.textContent = originalTotal.toLocaleString();
+                }
+            }
 
-            const confirmButton = document.getElementById('confirm-order-btn');
-            const checkCouponBtn = document.getElementById('check-coupon-btn');
-            const couponMsg = document.getElementById('coupon-message');
-            const discountedPriceEl = document.getElementById('discounted-price');
-            const discountedBox = document.getElementById('discounted-box');
+            // ✅ ฟังก์ชันแสดงคูปองที่ใช้
+            function showAppliedCoupon(couponData) {
+                couponCodeDisplay.textContent = couponInput.value;
+                
+                if (couponData.coupon_type === 'point') {
+                    couponBenefit.textContent = ` (โบนัส ${couponData.bonus_points} Point)`;
+                } else {
+                    couponBenefit.textContent = ` (ส่วนลด ${couponData.discount} บาท)`;
+                }
+                
+                appliedCouponBox.style.display = 'block';
+                checkCouponBtn.style.display = 'none';
+                cancelCouponBtn.style.display = 'inline-block';
+                couponInput.disabled = true;
+            }
+
+            // ✅ ฟังก์ชันยกเลิกคูปอง
+            function cancelCoupon() {
+                appliedCoupon = null;
+                appliedCouponBox.style.display = 'none';
+                checkCouponBtn.style.display = 'inline-block';
+                cancelCouponBtn.style.display = 'none';
+                couponInput.disabled = false;
+                couponInput.value = '';
+                couponMsg.textContent = '';
+                updatePriceDisplay();
+            }
 
             function toggleConfirmButton(cart) {
-                if (Object.keys(cart).length > 0) {
+                const confirmButton = document.getElementById('confirm-order-btn');
+                if (cart.length > 0) {
                     confirmButton.style.display = 'inline-block';
                 } else {
                     confirmButton.style.display = 'none';
                 }
             }
 
-
+            renderOrderList();
             toggleConfirmButton(cart);
 
             checkCouponBtn.addEventListener('click', function () {
+                if (appliedCoupon) {
+                    couponMsg.textContent = 'คุณใช้คูปองไปแล้ว กรุณายกเลิกคูปองเก่าก่อน';
+                    couponMsg.className = 'text-danger small mt-1';
+                    return;
+                }
+
                 $.ajax({
                     type: "post",
                     url: "{{ route('checkCoupon') }}",
                     data: {
-                        code: $('#coupon').val(),
-                        subtotal: parseFloat(totalPriceEl.textContent.replace(/,/g, ''))
+                        code: couponInput.value,
+                        subtotal: originalTotal
                     },
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -244,30 +302,37 @@
                     dataType: "json",
                     success: function (response) {
                         if (response.status) {
-                            couponMsg.classList.remove('text-danger');
-                            couponMsg.classList.add('text-success');
-                            discountedPriceEl.textContent = parseFloat(response.final_total).toLocaleString();
-                            discountedBox.style.display = 'block';
+                            appliedCoupon = response;
+                            showAppliedCoupon(response);
+                            updatePriceDisplay();
+                            
+                            couponMsg.className = 'text-success small mt-1';
+                            couponMsg.textContent = response.message;
                         } else {
-                            couponMsg.classList.remove('text-success');
-                            couponMsg.classList.add('text-danger');
-                            discountedBox.style.display = 'none';
+                            couponMsg.className = 'text-danger small mt-1';
+                            couponMsg.textContent = response.message;
                         }
-                        couponMsg.textContent = response.message;
                     }
                 });
             });
 
+            cancelCouponBtn.addEventListener('click', function() {
+                cancelCoupon();
+            });
+
+            const confirmButton = document.getElementById('confirm-order-btn');
             confirmButton.addEventListener('click', function(event) {
                 event.preventDefault();
                 if (Object.keys(cart).length > 0) {
+                    const couponCode = appliedCoupon ? couponInput.value : null;
+                    
                     $.ajax({
                         type: "post",
                         url: "{{ route('SendOrder') }}",
                         data: {
                             cart: cart,
-                            remark: $('#remark').val(),
-                            coupon: $('#coupon').val()
+                            remark: '',
+                            coupon: couponCode
                         },
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -277,8 +342,8 @@
                             if (response.status == true) {
                                 Swal.fire(response.message, "", "success");
                                 localStorage.removeItem('cart');
-                                cart = {}; // เคลียร์ตัวแปร cart ด้วย
-                                toggleConfirmButton(cart); // ซ่อนปุ่ม
+                                cart = []; 
+                                toggleConfirmButton(cart); 
                                 setTimeout(() => {
                                     location.reload();
                                 }, 3000);
@@ -290,11 +355,7 @@
                     });
                 }
             });
-
         });
     </script>
-
-
-
 
 @endsection
