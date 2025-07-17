@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use App\Models\Coupon;
+use App\Models\CouponUsageLog;
 
 class Delivery extends Controller
 {
@@ -140,6 +141,13 @@ class Delivery extends Controller
                         if ($couponModel && $couponModel->isValid()) {
                             $discount = $this->calculateDiscount($couponModel, $total);
                             $couponModel->increment('used_count');
+                            // Log coupon usage
+                            CouponUsageLog::create([
+                                'user_id' => Session::get('user')->id,
+                                'coupon_id' => $couponModel->id,
+                                'order_id' => $order->id,
+                                'discount' => $discount
+                            ]);
                         }
                     }
                     $order = new Orders();

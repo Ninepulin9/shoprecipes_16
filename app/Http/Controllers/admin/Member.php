@@ -9,6 +9,8 @@ use App\Models\UsersCategories;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Models\CouponUsageLog;
+use App\Models\RewardRedeemLog;
 class Member extends Controller
 {
     public function member()
@@ -177,6 +179,7 @@ class Member extends Controller
         $info = [];
         foreach ($table as $rs) {
             $action = '<a href="' . route('userEdit', $rs->id) . '" class="btn btn-sm btn-outline-primary" title="แก้ไข"><i class="bx bx-edit-alt"></i></a>
+    <button type="button" data-id="' . $rs->id . '" class="btn btn-sm btn-outline-info historyCouponBtn" title="ประวัติ"><i class="bx bx-history"></i></button>
     <button type="button" data-id="' . $rs->id . '" class="btn btn-sm btn-outline-danger deleteUserTable" title="ลบ"><i class="bx bxs-trash"></i></button>';
 
             $info[] = [
@@ -315,4 +318,24 @@ public function checkTelExists(Request $request)
     
     return response()->json(['exists' => $exists]);
 }
+public function userHistory(Request $request)
+    {
+        $id = $request->input('id');
+        $user = User::find($id);
+        if (!$user) {
+            return 'ไม่พบข้อมูลผู้ใช้';
+        }
+
+        $couponLogs = CouponUsageLog::with('coupon')
+            ->where('user_id', $id)
+            ->orderByDesc('used_at')
+            ->get();
+
+        $redeemLogs = RewardRedeemLog::with('benefit')
+            ->where('user_id', $id)
+            ->orderByDesc('redeemed_at')
+            ->get();
+
+        return view('member.history', compact('user', 'couponLogs', 'redeemLogs'))->render();
+    }
 }

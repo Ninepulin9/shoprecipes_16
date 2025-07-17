@@ -22,7 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use PromptPayQR\Builder;
 use App\Models\Coupon;
-
+use App\Models\CouponUsageLog;
 class Admin extends Controller
 {
     public function dashboard()
@@ -233,6 +233,7 @@ public function confirm_pay(Request $request)
         $bonusPoints = 0;
         $couponCode = $request->input('coupon_code');
         $couponModel = null;
+        $couponUsed = null;
         $orderHasCoupon = false;
         
         // ✅ ตรวจสอบว่ามีออเดอร์ที่ใช้คูปองแล้วหรือไม่
@@ -273,6 +274,7 @@ public function confirm_pay(Request $request)
                 $discount = $couponModel->calculateDiscount($total->total);
                 $bonusPoints = $couponModel->getBonusPoints();
                 $couponModel->incrementUsage();
+                $couponUsed = $couponModel;
                 
                 // ✅ อัพเดท orders ให้มีข้อมูลคูปอง
                 Orders::where('table_id', $id)->whereIn('status', [1, 2])->update([
@@ -302,6 +304,15 @@ public function confirm_pay(Request $request)
                     $paygroup->order_id = $rs->id;
                     $paygroup->save();
                 }
+            }
+            if ($couponUsed) {
+                CouponUsageLog::create([
+                    'user_id' => $request->input('user_id'),
+                    'coupon_id' => $couponUsed->id,
+                    'coupon_code' => $couponUsed->code,
+                    'discount_amount' => $discount,
+                    'used_at' => now(),
+                ]);
             }
 
             $userId = $request->input('user_id');

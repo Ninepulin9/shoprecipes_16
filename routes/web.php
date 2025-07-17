@@ -242,6 +242,7 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/admin/user/edit/{id}', [Member::class, 'userEdit'])->name('userEdit');
     Route::post('/admin/user/delete', [Member::class, 'userDelete'])->name('userDelete');
     Route::post('/admin/user/save', [Member::class, 'userSave'])->name('userSave');
+    Route::post('/admin/user/history', [Member::class, 'userHistory'])->name('userHistory');
     //check email and tel
     Route::post('/check-email-exists', [Member::class, 'checkEmailExists'])->name('checkEmailExists');
     Route::post('/check-tel-exists', [Member::class, 'checkTelExists'])->name('checkTelExists');
