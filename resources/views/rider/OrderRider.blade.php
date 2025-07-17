@@ -91,7 +91,7 @@
         e.preventDefault();
         var id = $(this).data('id');
         Swal.fire({
-            title: "ท่านต้องการลบโต้ะใช่หรือไม่?",
+            title: "ท่านต้องการลบจุดใช่หรือไม่?",
             icon: "question",
             showDenyButton: true,
             confirmButtonText: "ตกลง",

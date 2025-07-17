@@ -12,13 +12,13 @@
                             @csrf
                             <div class="card">
                                 <div class="card-header">
-                                    เพิ่มโต้ะ
+                                    เพิ่มจุด
                                     <hr>
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3 mb-3">
                                         <div class="col-md-12">
-                                            <label for="table_number" class="form-label">เลขโต้ะ : </label>
+                                            <label for="table_number" class="form-label">จุดที่ : </label>
                                             <input type="text" class="form-control" id="table_number" name="table_number" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
                                         </div>
                                     </div>

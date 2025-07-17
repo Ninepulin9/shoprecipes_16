@@ -23,7 +23,7 @@
                             <thead>
                                 <tr>
                                     <th class="text-center">สั่งหน้าร้าน</th>
-                                    <th class="text-center">เลขโต้ะ</th>
+                                    <th class="text-center">จุดที่</th>
                                     <th class="text-center">ยอดราคา</th>
                                     <th class="text-left">หมายเหตุ</th>
                                     <th class="text-left">วันที่สั่ง</th>
@@ -48,7 +48,7 @@
                             <thead>
                                 <tr>
                                     <th class="text-center">เลขที่ใบเสร็จ</th>
-                                    <th class="text-center">โต้ะ</th>
+                                    <th class="text-center">จุดที่</th>
                                     <th class="text-center">ยอดรวมทั้งหมด</th>
                                     <th class="text-center">วันที่ชำระ</th>
                                     <th class="text-center">จัดการ</th>
@@ -365,87 +365,173 @@
             }
         });
     });
+var originalOrderTotal = 0;
 
-    $(document).on('click', '.modalPay', function(e) {
-        var total = $(this).data('total');
-        var id = $(this).data('id');
-        Swal.showLoading();
-        $.ajax({
-            type: "post",
-            url: "{{ route('generateQr') }}",
-            data: {
-                total: total
-            },
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                Swal.close();
-                $('#modal-pay').modal('show');
-                $('#totalPay').html(total + ' บาท');
-                $('#qr_code').html(response);
-                $('#table_id').val(id);
-                $('#member_search').val('');
-                $('#member_id').val('');
-                $('#member_info').hide().text('');
-                $('#coupon_box').hide();
-            }
-        });
+   $(document).on('click', '.modalPay', function(e) {
+    var total = $(this).data('total');
+    var id = $(this).data('id');
+    
+    // เก็บราคาต้นฉบับ
+    originalOrderTotal = parseFloat(total);
+    
+    Swal.showLoading();
+    $.ajax({
+        type: "post",
+        url: "{{ route('generateQr') }}",
+        data: {
+            total: total
+        },
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            Swal.close();
+            $('#modal-pay').modal('show');
+            $('#totalPay').html(total + ' บาท');
+            $('#qr_code').html(response);
+            $('#table_id').val(id);
+            $('#member_search').val('');
+            $('#member_id').val('');
+            $('#member_info').hide().text('');
+            $('#coupon_box').hide();
+            $('#discounted').html(''); // เคลียร์ข้อมูลส่วนลด
+        }
     });
+});
 
-    $('#check_member').click(function () {
-        $.ajax({
-            url: "{{ route('admin.checkUser') }}",
-            type: "post",
-            data: {
-                keyword: $('#member_search').val(),
-                table_id: $('#table_id').val()
-            },
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-            success: function (res) {
-                if (res.status) {
-                    $('#member_id').val(res.user.id);
-                    $('#member_info').show().text(res.user.name + ' (' + res.user.email + ') คะแนน ' + res.user.point);
-                    if (res.coupon_used) {
-                        $('#member_info').append(' ใช้คูปอง ' + res.coupon_used);
-                        $('#coupon_box').hide();
-                    } else {
-                        $('#coupon_select').empty();
-                        $('#coupon_select').append('<option value="">ไม่ใช้คูปอง</option>');
-                        res.coupons.forEach(function(c){
-                            $('#coupon_select').append('<option value="'+c.code+'">'+c.code+'</option>');
-                        });
-                        $('#coupon_box').show();
-                    }
-                } else {
-                    $('#member_id').val('');
-                    $('#member_info').show().text(res.message);
-                    $('#coupon_box').hide();
-                }
-            }
+    // แทนที่ script เดิมของ $('#check_member').click ด้วยโค้ดนี้
+
+// ฟังก์ชันค้นหาสมาชิก (แยกออกมาเพื่อใช้ซ้ำได้)
+function searchMember() {
+    var keyword = $('#member_search').val().trim();
+    
+    // ตรวจสอบว่ากรอกข้อมูลหรือไม่
+    if (!keyword) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'กรุณากรอกข้อมูล',
+            text: 'กรุณากรอกเบอร์โทรหรือ UID',
+            timer: 2000,
+            showConfirmButton: false
         });
-    });
-
-  $('#coupon_select').change(function(){
-    var code = $(this).val();
-    if(!code){
-        $('#discounted').text('');
         return;
     }
+
+    // แสดง loading
+    Swal.fire({
+        title: 'กำลังค้นหา...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    $.ajax({
+        url: "{{ route('admin.checkUser') }}",
+        type: "post",
+        data: {
+            keyword: keyword,
+            table_id: $('#table_id').val()
+        },
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        success: function (res) {
+            Swal.close(); // ปิด loading
+            
+            if (res.status) {
+                $('#member_id').val(res.user.id);
+                $('#member_info').show().html(`
+                    <div class="alert alert-success mb-0">
+                        <strong>✅ พบสมาชิก:</strong> ${res.user.name} (${res.user.email})<br>
+                        <strong>คะแนน:</strong> ${res.user.point} แต้ม
+                    </div>
+                `);
+                
+                if (res.coupon_used) {
+                    $('#member_info .alert').append(`<br><strong>คูปองที่ใช้:</strong> ${res.coupon_used}`);
+                    $('#coupon_box').hide();
+                } else {
+                    $('#coupon_select').empty();
+                    $('#coupon_select').append('<option value="">ไม่ใช้คูปอง</option>');
+                    res.coupons.forEach(function(c){
+                        $('#coupon_select').append('<option value="'+c.code+'">'+c.code+'</option>');
+                    });
+                    $('#coupon_box').show();
+                }
+            } else {
+                $('#member_id').val('');
+                $('#member_info').show().html(`
+                    <div class="alert alert-warning mb-0">
+                        <strong>⚠️ ไม่พบข้อมูล:</strong> ${res.message}
+                    </div>
+                `);
+                $('#coupon_box').hide();
+            }
+        },
+        error: function() {
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาด',
+                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    });
+}
+
+// กด Enter ในช่องค้นหา
+$('#member_search').on('keypress', function(e) {
+    if (e.which === 13) { // Enter key
+        e.preventDefault();
+        searchMember();
+    }
+});
+
+// กดปุ่มตรวจสอบ (ใช้ฟังก์ชันเดียวกัน)
+$('#check_member').click(function() {
+    searchMember();
+});
+// แบบง่าย ๆ แสดงยอดหลังลดเป็นตัวใหญ่
+
+$('#coupon_select').change(function(){
+    var code = $(this).val();
+    
+    if(!code){
+        $('#discounted').html('');
+        $('#totalPay').html(originalOrderTotal.toLocaleString() + ' บาท');
+        return;
+    }
+    
     $.ajax({
         type:"post",
         url:"{{ route('checkCoupon') }}",
-        data:{code:code, subtotal: parseFloat($('#totalPay').text().replace(' บาท',''))},
+        data:{
+            code: code, 
+            subtotal: originalOrderTotal // ใช้ราคาต้นฉบับ
+        },
         headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'},
         success:function(res){
             if(res.status){
                 if(res.coupon_type === 'point') {
-                    $('#discounted').html('<span class="text-success">🎁 โบนัส ' + res.bonus_points + ' Point</span>');
+                    $('#discounted').html('<h5 class="text-success">🎁 โบนัส ' + res.bonus_points + ' Point</h5>');
+                    // ไม่เปลี่ยนราคา เพราะเป็นแต้มโบนัส
+                    $('#totalPay').html(originalOrderTotal.toLocaleString() + ' บาท');
                 } else {
-                    $('#discounted').text(res.final_total + ' บาทหลังส่วนลด');
+                    var discount = originalOrderTotal - res.final_total;
+                    $('#discounted').html(`
+                        <div class="text-center">
+                            <div class="text-muted">ราคาเดิม: <del>${originalOrderTotal.toLocaleString()} บาท</del></div>
+                            <div class="text-danger">ส่วนลด: -${discount.toLocaleString()} บาท</div>
+                            <h4 class="text-success mt-2">ราคาหลังลด: ${res.final_total.toLocaleString()} บาท</h4>
+                        </div>
+                    `);
+                    // อัพเดทยอดชำระเป็นราคาหลังลด
+                    $('#totalPay').html(res.final_total.toLocaleString() + ' บาท');
                 }
-            }else{
-                $('#discounted').text('');
+            } else {
+                $('#discounted').html('');
+                $('#totalPay').html(originalOrderTotal.toLocaleString() + ' บาท');
             }
         }
     });

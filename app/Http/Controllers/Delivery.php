@@ -250,7 +250,7 @@ class Delivery extends Controller
 
     public function sendEmp()
     {
-        event(new OrderCreated(['ลูกค้าเรียกจากโต้ะที่ ' . session('table_id')]));
+        event(new OrderCreated(['ลูกค้าเรียกจากจุดที่ ' . session('table_id')]));
     }
 
     public function users()

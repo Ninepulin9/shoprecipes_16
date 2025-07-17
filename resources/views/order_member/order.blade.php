@@ -22,7 +22,7 @@
                         <table id="myTable" class="display table-responsive">
                             <thead>
                                 <tr>
-                                    <th class="text-center">เลขโต้ะ</th>
+                                    <th class="text-center">จุดที่</th>
                                     <th class="text-left">หมายเหตุ</th>
                                     <th class="text-left">วันที่สั่ง</th>
                                     <th class="text-center">สถานะ</th>

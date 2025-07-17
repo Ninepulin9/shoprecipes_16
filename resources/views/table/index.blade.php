@@ -9,13 +9,13 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header d-flex justify-content-end">
-                        <a href="{{route('tableCreate')}}" class="btn btn-sm btn-outline-success d-flex align-items-center" style="font-size:14px">เพิ่มโต้ะ&nbsp;<i class="bx bxs-plus-circle"></i></a>
+                        <a href="{{route('tableCreate')}}" class="btn btn-sm btn-outline-success d-flex align-items-center" style="font-size:14px">เพิ่มจุด&nbsp;<i class="bx bxs-plus-circle"></i></a>
                     </div>
                     <div class="card-body">
                         <table id="myTable" class="display" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th class="text-center">เลขโต้ะ</th>
+                                    <th class="text-center">จุดที่</th>
                                     <th class="text-center">QR-Code</th>
                                     <th class="text-center">จัดการ</th>
                                 </tr>
@@ -99,7 +99,7 @@
         e.preventDefault();
         var id = $(this).data('id');
         Swal.fire({
-            title: "ท่านต้องการลบโต้ะใช่หรือไม่?",
+            title: "ท่านต้องการลบจุดใช่หรือไม่?",
             icon: "question",
             showDenyButton: true,
             confirmButtonText: "ตกลง",

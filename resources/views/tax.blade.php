@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 
 <head>
     <meta charset="UTF-8" />
@@ -12,14 +12,12 @@
             padding: 20px 0;
             color: #2d2d2d;
             background: #ffffff;
-            /* ชัดเจนว่าให้พื้นหลังขาว */
         }
 
         .receipt {
             width: 100%;
             max-width: 420px;
             margin: 0 auto;
-            /* จัดให้อยู่กึ่งกลางแนวนอน */
             background: #ffffff;
             border: 1px solid #e2e8f0;
             padding: 30px;
@@ -63,6 +61,32 @@
         .info p {
             margin: 4px 0;
             font-size: 14px;
+        }
+
+        /* ส่วนข้อมูลสมาชิก */
+        .member-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+        }
+
+        .member-info h4 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .member-info p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .member-info .highlight {
+            color: #007bff;
+            font-weight: 600;
         }
 
         table {
@@ -142,14 +166,34 @@
                 <div class="info">
                     <p><strong>เลขที่ใบเสร็จ #{{$pay->payment_number}}</strong></p>
                     <p>วันที่: {{$pay->created_at}}</p>
+                    @if($pay->table_id)
+                        <p>จุดที่: {{$pay->table_id}}</p>
+                    @endif
                 </div>
             </div>
+
+            <!-- ข้อมูลสมาชิก -->
+            <div class="member-info">
+                <h4> ข้อมูลสมาชิก</h4>
+                @if($pay->user)
+                    <p><strong>UID:</strong> <span class="highlight">{{ $pay->user->UID }}</span></p>
+                    <p><strong>ชื่อ:</strong> {{ $pay->user->name }}</p>
+                    <p><strong>เบอร์โทร:</strong> {{ $pay->user->tel }}</p>
+                    <p><strong>แต้มคงเหลือ:</strong> <span class="highlight">{{ number_format($pay->user->point ?? 0) }} แต้ม</span></p>
+                @else
+                    <p><strong>UID:</strong> -</p>
+                    <p><strong>ชื่อ:</strong> -</p>
+                    <p><strong>เบอร์โทร:</strong> -</p>
+                    <p><strong>แต้มคงเหลือ:</strong> -</p>
+                @endif
+            </div>
+
             <table>
                 <thead>
                     <tr>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                        <th>รายการ</th>
+                        <th>จำนวน</th>
+                        <th>ราคา</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -160,15 +204,28 @@
                             @foreach($rs['option'] as $option)
                             <div style="font-size: 12px; color: #6b7280;">+ {{$option['option']->type}}</div>
                             @endforeach
+                            @if($rs->remark)
+                                <div style="font-size: 12px; color: #6b7280;">หมายเหตุ: {{$rs->remark}}</div>
+                            @endif
                         </td>
-                        <td><?= $rs->quantity ?></td>
-                        <td><?= number_format($rs->price, '2') ?> ฿</td>
+                        <td>{{ $rs->quantity }}</td>
+                        <td>{{ number_format($rs->price, 2) }} ฿</td>
                     </tr>
                     @endforeach
                 </tbody>
             </table>
 
-            <p class="total">Total: <?= number_format($pay->total, '2') ?> ฿</p>
+            <p class="total">รวมทั้งสิ้น: {{ number_format($pay->total, 2) }} ฿</p>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>ขอบคุณที่ใช้บริการ</p>
+                @if($pay->user)
+                    <p style="color: #007bff;">สะสมแต้มเพื่อรับสิทธิพิเศษ</p>
+                @else
+                    <p style="color: #6c757d;">สมัครสมาชิกเพื่อสะสมแต้ม</p>
+                @endif
+            </div>
         </div>
     </div>
 </body>

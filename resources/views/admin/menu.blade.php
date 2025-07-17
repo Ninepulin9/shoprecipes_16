@@ -58,7 +58,7 @@ $config = Config::first();
             <li class="menu-item {{ ($function_key == 'table') ? 'active' : '' }}">
                 <a href="{{route('table')}}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-barcode"></i>
-                    <div data-i18n="Analytics">จัดการโต้ะ</div>
+                    <div data-i18n="Analytics">จัดการจุดที่ </div>
                 </a>
             </li>
 
@@ -123,7 +123,7 @@ $config = Config::first();
             </li>
             <li class="menu-item {{ ($function_key == 'redeem_benefit') ? 'active' : '' }}">
                 <a href="{{route('redeemBenefit')}}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bxs-gift"></i>
+                    <i class="menu-icon tf-icons bx bx-transfer"></i>
                     <div data-i18n="Basic">แลกแต้ม</div>
                 </a>
             </li>

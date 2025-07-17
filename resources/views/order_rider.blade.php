@@ -48,7 +48,7 @@
                             <thead>
                                 <tr>
                                     <th class="text-center">เลขที่ใบเสร็จ</th>
-                                    <th class="text-center">โต้ะ</th>
+                                    <th class="text-center">จุดที่</th>
                                     <th class="text-center">ยอดรวมทั้งหมด</th>
                                     <th class="text-center">วันที่ชำระ</th>
                                     <th class="text-center">จัดการ</th>

@@ -79,6 +79,32 @@
             margin-top: -8px;
             cursor: pointer;
         }
+
+        /* ✅ สไตล์ปุ่มเคลียร์ตะกร้า */
+        .btn-clear-cart {
+            background: linear-gradient(360deg, #dc3545, #c82333);
+            border-radius: 20px;
+            border: 0px solid #dc3545;
+            padding: 8px 20px;
+            font-weight: bold;
+            text-decoration: none;
+            color: rgb(255, 255, 255);
+            transition: background 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-clear-cart:hover {
+            background: linear-gradient(360deg, #c82333, #dc3545);
+            cursor: pointer;
+            color: rgb(255, 255, 255);
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
     </style>
 
     <div class="container">
@@ -91,6 +117,7 @@
                 <div class="title-list-buy">
                     รายการอาหารที่สั่ง
                 </div>
+                
                 <div id="order-summary" class="mt-2"></div>
                 <div class="input-group mt-3">
                     <input type="text" id="coupon" class="form-control" placeholder="กรอกเลขคูปอง">
@@ -103,6 +130,13 @@
                 <div id="applied-coupon" class="alert alert-success mt-2" style="display:none;">
                     <strong>ใช้คูปอง:</strong> <span id="coupon-code-display"></span>
                     <span id="coupon-benefit"></span>
+                </div>
+                
+                <!-- ✅ ย้ายปุ่มเคลียร์ตะกร้ามาไว้ใต้ปุ่มตรวจสอบ ทางขวา -->
+                <div class="text-end mt-2">
+                    <button type="button" class="btn-clear-cart" id="clear-cart-btn" style="display: none;">
+                        🗑️ เคลียร์ตะกร้า
+                    </button>
                 </div>
                 <div class="fw-bold fs-5 mt-5 " style="border-top:2px solid #7e7e7e; margin-bottom:-10px;">
                     ยอดชำระ
@@ -128,6 +162,7 @@
             const totalPriceEl = document.getElementById('total-price');
             const checkCouponBtn = document.getElementById('check-coupon-btn');
             const cancelCouponBtn = document.getElementById('cancel-coupon-btn');
+            const clearCartBtn = document.getElementById('clear-cart-btn'); // ✅ เพิ่ม
             const couponInput = document.getElementById('coupon');
             const couponMsg = document.getElementById('coupon-message');
             const discountedBox = document.getElementById('discounted-box');
@@ -139,6 +174,7 @@
             let cart = JSON.parse(localStorage.getItem('cart')) || [];
             let appliedCoupon = null; // ✅ เก็บข้อมูลคูปองที่ใช้
             let originalTotal = 0;
+            
             // ตรวจสอบสถานะคูปองของโต๊ะเมื่อโหลดหน้า
             $.get("{{ route('couponStatus') }}", function(res){
                 if(res.used){
@@ -155,6 +191,7 @@
                 if (cart.length === 0) {
                     const noItemsMessage = document.createElement('div');
                     noItemsMessage.textContent = "ท่านยังไม่ได้เลือกสินค้า";
+                    noItemsMessage.className = "text-center text-muted py-4";
                     container.appendChild(noItemsMessage);
                 } else {
                     const mergedItems = {};
@@ -278,6 +315,40 @@
                 updatePriceDisplay();
             }
 
+            // ✅ ฟังก์ชันเคลียร์ตะกร้า
+            function clearCart() {
+                Swal.fire({
+                    title: 'ยืนยันการเคลียร์ตะกร้า',
+                    text: 'คุณต้องการลบสินค้าทั้งหมดในตะกร้าใช่หรือไม่?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'ใช่, เคลียร์ตะกร้า',
+                    cancelButtonText: 'ยกเลิก'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // เคลียร์ข้อมูล
+                        cart = [];
+                        localStorage.removeItem('cart');
+                        cancelCoupon(); // ยกเลิกคูปองด้วย
+                        
+                        // อัพเดท UI
+                        renderOrderList();
+                        toggleConfirmButton(cart);
+                        toggleClearButton(cart);
+                        
+                        Swal.fire({
+                            title: 'เคลียร์สำเร็จ!',
+                            text: 'ตะกร้าของคุณถูกเคลียร์แล้ว',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    }
+                });
+            }
+
             function toggleConfirmButton(cart) {
                 const confirmButton = document.getElementById('confirm-order-btn');
                 if (cart.length > 0) {
@@ -287,8 +358,18 @@
                 }
             }
 
+            // ✅ ฟังก์ชันแสดง/ซ่อนปุ่มเคลียร์ตะกร้า
+            function toggleClearButton(cart) {
+                if (cart.length > 0) {
+                    clearCartBtn.style.display = 'inline-block';
+                } else {
+                    clearCartBtn.style.display = 'none';
+                }
+            }
+
             renderOrderList();
             toggleConfirmButton(cart);
+            toggleClearButton(cart); // ✅ เพิ่ม
 
             checkCouponBtn.addEventListener('click', function () {
                 if (appliedCoupon) {
@@ -328,6 +409,11 @@
                 cancelCoupon();
             });
 
+            // ✅ Event listener สำหรับปุ่มเคลียร์ตะกร้า
+            clearCartBtn.addEventListener('click', function() {
+                clearCart();
+            });
+
             const confirmButton = document.getElementById('confirm-order-btn');
             confirmButton.addEventListener('click', function(event) {
                 event.preventDefault();
@@ -352,6 +438,7 @@
                                 localStorage.removeItem('cart');
                                 cart = []; 
                                 toggleConfirmButton(cart); 
+                                toggleClearButton(cart); // ✅ เพิ่ม
                                 setTimeout(() => {
                                     location.reload();
                                 }, 3000);
