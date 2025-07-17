@@ -124,6 +124,7 @@ public function SendOrder(Request $request)
         $discount = 0;
         
         // ✅ คำนวณส่วนลดจากยอดรวมทั้งหมด (ครั้งเดียว)
+        $couponModel = null;
         if ($coupon) {
             $couponModel = Coupon::where('code', $coupon)->first();
             if ($couponModel && $couponModel->isValid()) {
@@ -139,6 +140,10 @@ public function SendOrder(Request $request)
         $order->total = $total - $discount; // ✅ ยอดรวม - ส่วนลด (ครั้งเดียว)
         $order->remark = $remark;
         $order->status = 1;
+        if ($couponModel) {
+            $order->coupon_code = $couponModel->code;
+            $order->discount_amount = $discount;
+        }
         
         if ($order->save()) {
             // ✅ บันทึกรายละเอียดแต่ละ item (ไม่คำนวณส่วนลดซ้ำ)

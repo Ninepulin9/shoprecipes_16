@@ -397,18 +397,26 @@
         $.ajax({
             url: "{{ route('admin.checkUser') }}",
             type: "post",
-            data: { keyword: $('#member_search').val() },
+            data: {
+                keyword: $('#member_search').val(),
+                table_id: $('#table_id').val()
+            },
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             success: function (res) {
                 if (res.status) {
                     $('#member_id').val(res.user.id);
                     $('#member_info').show().text(res.user.name + ' (' + res.user.email + ') คะแนน ' + res.user.point);
-                    $('#coupon_select').empty();
-                    $('#coupon_select').append('<option value="">ไม่ใช้คูปอง</option>');
-                    res.coupons.forEach(function(c){
-                        $('#coupon_select').append('<option value="'+c.code+'">'+c.code+'</option>');
-                    });
-                    $('#coupon_box').show();
+                    if (res.coupon_used) {
+                        $('#member_info').append(' ใช้คูปอง ' + res.coupon_used);
+                        $('#coupon_box').hide();
+                    } else {
+                        $('#coupon_select').empty();
+                        $('#coupon_select').append('<option value="">ไม่ใช้คูปอง</option>');
+                        res.coupons.forEach(function(c){
+                            $('#coupon_select').append('<option value="'+c.code+'">'+c.code+'</option>');
+                        });
+                        $('#coupon_box').show();
+                    }
                 } else {
                     $('#member_id').val('');
                     $('#member_info').show().text(res.message);

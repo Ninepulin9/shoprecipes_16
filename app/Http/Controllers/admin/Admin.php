@@ -298,6 +298,9 @@ public function confirm_pay(Request $request)
             $order = Orders::where('table_id', $id)->whereIn('status', [1, 2])->get();
             foreach ($order as $rs) {
                 $rs->status = 3;
+                if ($request->input('user_id')) {
+                    $rs->users_id = $request->input('user_id');
+                }
                 if ($rs->save()) {
                     $paygroup = new PayGroup();
                     $paygroup->pay_id = $pay->id;
@@ -305,12 +308,25 @@ public function confirm_pay(Request $request)
                     $paygroup->save();
                 }
             }
+            $logCoupon = null;
             if ($couponUsed) {
+                $logCoupon = [
+                    'coupon' => $couponUsed,
+                    'amount' => $discount
+                ];
+            } elseif ($existingCouponOrder && isset($existingCoupon)) {
+                $logCoupon = [
+                    'coupon' => $existingCoupon,
+                    'amount' => $existingCouponOrder->discount_amount ?? 0
+                ];
+            }
+
+            if ($logCoupon) {
                 CouponUsageLog::create([
                     'user_id' => $request->input('user_id'),
-                    'coupon_id' => $couponUsed->id,
-                    'coupon_code' => $couponUsed->code,
-                    'discount_amount' => $discount,
+                    'coupon_id' => $logCoupon['coupon']->id,
+                    'coupon_code' => $logCoupon['coupon']->code,
+                    'discount_amount' => $logCoupon['amount'],
                     'used_at' => now(),
                 ]);
             }
@@ -369,14 +385,35 @@ public function confirm_pay(Request $request)
     public function checkUser(Request $request)
     {
         $keyword = $request->input('keyword');
+        $tableId = $request->input('table_id');
         $user = User::where('UID', $keyword)->orWhere('tel', $keyword)->first();
         if ($user) {
-            $coupons = Coupon::where(function ($q) {
-                $q->whereNull('expired_at')->orWhere('expired_at', '>', now());
-            })->where(function ($q) {
-                $q->whereNull('usage_limit')->orWhereColumn('used_count', '<', 'usage_limit');
-            })->get();
-            return response()->json(['status' => true, 'user' => $user, 'coupons' => $coupons]);
+            $couponUsed = null;
+            if ($tableId) {
+                $existing = Orders::where('table_id', $tableId)
+                    ->whereIn('status', [1, 2])
+                    ->whereNotNull('coupon_code')
+                    ->first();
+                if ($existing) {
+                    $couponUsed = $existing->coupon_code;
+                }
+            }
+
+            if ($couponUsed) {
+                return response()->json([
+                    'status' => true,
+                    'user' => $user,
+                    'coupon_used' => $couponUsed
+                ]);
+            }
+
+            $coupons = Coupon::active()->get();
+
+            return response()->json([
+                'status' => true,
+                'user' => $user,
+                'coupons' => $coupons
+            ]);
         }
         return response()->json(['status' => false, 'message' => 'ไม่พบผู้ใช้']);
     }

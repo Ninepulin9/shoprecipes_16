@@ -108,6 +108,7 @@ class Delivery extends Controller
             $menu_id = array();
             $categories_id = array();
             $total = 0;
+            $couponModel = null;
             foreach ($orderData as $key => $order) {
                 $item[$key] = [
                     'menu_id' => $order['id'],
@@ -140,14 +141,7 @@ class Delivery extends Controller
                         $couponModel = Coupon::where('code', $coupon)->first();
                         if ($couponModel && $couponModel->isValid()) {
                             $discount = $this->calculateDiscount($couponModel, $total);
-                            $couponModel->increment('used_count');
-                            // Log coupon usage
-                            CouponUsageLog::create([
-                                'user_id' => Session::get('user')->id,
-                                'coupon_id' => $couponModel->id,
-                                'order_id' => $order->id,
-                                'discount' => $discount
-                            ]);
+                            
                         }
                     }
                     $order = new Orders();
@@ -156,7 +150,21 @@ class Delivery extends Controller
                     $order->total = $total - $discount;
                     $order->remark = $remark;
                     $order->status = 1;
+                    if ($couponModel) {
+                        $order->coupon_code = $couponModel->code;
+                        $order->discount_amount = $discount;
+                    }
                     if ($order->save()) {
+                        if ($couponModel && $couponModel->isValid()) {
+                            $couponModel->increment('used_count');
+                            CouponUsageLog::create([
+                                'user_id' => Session::get('user')->id,
+                                'coupon_id' => $couponModel->id,
+                                'coupon_code' => $couponModel->code,
+                                'discount_amount' => $discount,
+                                'used_at' => now()
+                            ]);
+                        }
                         foreach ($item as $rs) {
                             $orderdetail = new OrdersDetails();
                             $orderdetail->order_id = $order->id;
