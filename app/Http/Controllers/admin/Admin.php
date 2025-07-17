@@ -234,6 +234,7 @@ public function confirm_pay(Request $request)
         $couponCode = $request->input('coupon_code');
         $couponModel = null;
         $couponUsed = null;
+        $userId = $request->input('user_id');
         $orderHasCoupon = false;
         
         // ✅ ตรวจสอบว่ามีออเดอร์ที่ใช้คูปองแล้วหรือไม่
@@ -244,6 +245,15 @@ public function confirm_pay(Request $request)
         
         if ($existingCouponOrder) {
             $orderHasCoupon = true;
+            // ตรวจสอบการใช้คูปองซ้ำของผู้ใช้ถ้ามีข้อมูลผู้ใช้
+            if ($userId && CouponUsageLog::where('user_id', $userId)
+                    ->where('coupon_code', $existingCouponOrder->coupon_code)
+                    ->exists()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'คูปองนี้ถูกใช้ไปแล้ว',
+                ]);
+            }
             // ✅ ถ้ามีคูปองจากตอนสั่งแล้ว
             if ($couponCode) {
                 return response()->json([
@@ -264,6 +274,14 @@ public function confirm_pay(Request $request)
             $couponModel = Coupon::where('code', $couponCode)->first();
             
             if ($couponModel) {
+                // ตรวจสอบว่าผู้ใช้นี้เคยใช้คูปองนี้แล้วหรือไม่
+                if ($userId && CouponUsageLog::where('user_id', $userId)
+                        ->where('coupon_code', $couponModel->code)->exists()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'คูปองนี้ถูกใช้ไปแล้ว',
+                    ]);
+                }
                 if (!$couponModel->isValid()) {
                     return response()->json([
                         'status' => false,
@@ -407,7 +425,12 @@ public function confirm_pay(Request $request)
                 ]);
             }
 
-            $coupons = Coupon::active()->get();
+            $usedCodes = CouponUsageLog::where('user_id', $user->id)
+                ->pluck('coupon_code');
+
+            $coupons = Coupon::active()
+                ->whereNotIn('code', $usedCodes)
+                ->get();
 
             return response()->json([
                 'status' => true,

@@ -140,6 +140,10 @@ class Delivery extends Controller
                     if ($coupon) {
                         $couponModel = Coupon::where('code', $coupon)->first();
                         if ($couponModel && $couponModel->isValid()) {
+                            if (CouponUsageLog::where('user_id', Session::get('user')->id)
+                                    ->where('coupon_code', $couponModel->code)->exists()) {
+                                return response()->json(['status' => false, 'message' => 'คูปองนี้ถูกใช้ไปแล้ว']);
+                            }
                             $discount = $this->calculateDiscount($couponModel, $total);
                             
                         }

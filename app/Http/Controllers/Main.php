@@ -21,6 +21,7 @@ use App\Models\Coupon;
 use Illuminate\Http\Request;
 use App\Models\UserCoupon;
 use Illuminate\Support\Facades\Session;
+use App\Models\CouponUsageLog;
 
 class Main extends Controller
 {
@@ -123,12 +124,20 @@ public function SendOrder(Request $request)
     if (!empty($item)) {
         $discount = 0;
         
-        // ✅ คำนวณส่วนลดจากยอดรวมทั้งหมด (ครั้งเดียว)
+        // ตรวจสอบการใช้คูปองซ้ำก่อนคำนวณส่วนลด
         $couponModel = null;
         if ($coupon) {
+             $tableId = session('table_id');
+            // หากโต๊ะนี้เคยใช้คูปองแล้ว ให้แจ้งเตือนและยกเลิกการใช้คูปอง
+            if ($tableId && Orders::where('table_id', $tableId)->whereNotNull('coupon_code')->exists()) {
+                return response()->json(['status' => false, 'message' => 'คูปองถูกใช้ไปแล้ว']);
+            }
             $couponModel = Coupon::where('code', $coupon)->first();
             if ($couponModel && $couponModel->isValid()) {
-                // ใช้ method จาก Model ที่จัดการคูปอง Point ถูกต้องแล้ว
+                if (CouponUsageLog::where('user_id', Session::get('user')->id ?? 0)
+                        ->where('coupon_code', $couponModel->code)->exists()) {
+                    return response()->json(['status' => false, 'message' => 'คูปองนี้ถูกใช้ไปแล้ว']);
+                }
                 $discount = $couponModel->calculateDiscount($total);
                 $couponModel->incrementUsage();
             }
@@ -220,6 +229,7 @@ public function SendOrder(Request $request)
 
     $code = $request->input('code');
     $subtotal = $request->input('subtotal');
+    $tableId = session('table_id');
 
     if ($code && $subtotal > 0) {
         $coupon = Coupon::where('code', $code)->first();
@@ -231,9 +241,21 @@ public function SendOrder(Request $request)
                 return response()->json($data);
             }
             
-            // ✅ ตรวจสอบว่าคูปองถูกใช้ไปแล้วหรือไม่ (ตรวจสอบ used_count)
+            /// ตรวจสอบว่าโต๊ะนี้เคยใช้คูปองแล้วหรือยัง
+            if ($tableId && Orders::where('table_id', $tableId)->whereNotNull('coupon_code')->exists()) {
+                $data['message'] = 'คูปองถูกใช้ไปแล้ว';
+                return response()->json($data);
+            }
+
+            // ✅ ตรวจสอบว่าคูปองถูกใช้ครบจำนวนหรือไม่
             if ($coupon->usage_limit && $coupon->used_count >= $coupon->usage_limit) {
                 $data['message'] = 'คูปองนี้ถูกใช้ครบจำนวนแล้ว';
+                return response()->json($data);
+            }
+            // ตรวจสอบว่าผู้ใช้นี้เคยใช้คูปองนี้แล้วหรือไม่
+            if (Session::get('user') && CouponUsageLog::where('user_id', Session::get('user')->id)
+                    ->where('coupon_code', $code)->exists()) {
+                $data['message'] = 'คูปองนี้ถูกใช้ไปแล้ว';
                 return response()->json($data);
             }
             
@@ -289,6 +311,17 @@ public function SendOrder(Request $request)
             'discount' => $discount,
             'final_total' => $subtotal - $discount
         ]);
+    }
+    public function couponStatus()
+    {
+        $tableId = session('table_id');
+        $used = false;
+        if ($tableId) {
+            $used = Orders::where('table_id', $tableId)
+                ->whereNotNull('coupon_code')->exists();
+        }
+
+        return response()->json(['used' => $used]);
     }
    
 

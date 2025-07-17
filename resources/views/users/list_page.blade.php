@@ -139,6 +139,14 @@
             let cart = JSON.parse(localStorage.getItem('cart')) || [];
             let appliedCoupon = null; // ✅ เก็บข้อมูลคูปองที่ใช้
             let originalTotal = 0;
+            // ตรวจสอบสถานะคูปองของโต๊ะเมื่อโหลดหน้า
+            $.get("{{ route('couponStatus') }}", function(res){
+                if(res.used){
+                    couponInput.disabled = true;
+                    checkCouponBtn.style.display = 'none';
+                    couponMsg.textContent = 'คูปองถูกใช้ไปแล้ว';
+                }
+            });
 
             function renderOrderList() {
                 container.innerHTML = '';
