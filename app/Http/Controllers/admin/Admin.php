@@ -210,77 +210,119 @@ class Admin extends Controller
         return redirect()->route('config')->with('error', 'ไม่สามารถบันทึกข้อมูลได้');
     }
 
-    public function confirm_pay(Request $request)
-    {
-        $data = [
-            'status' => false,
-            'message' => 'ชำระเงินไม่สำเร็จ',
-        ];
-        $id = $request->input('id');
-        if ($id) {
-            $total = DB::table('orders as o')
-                ->select(
-                    'o.table_id',
-                    DB::raw('SUM(o.total) as total'),
-                )
-                ->whereNot('table_id')
-                ->groupBy('o.table_id')
-                ->where('table_id', $id)
-                ->whereIn('status', [1, 2])
-                ->first();
+public function confirm_pay(Request $request)
+{
+    $data = [
+        'status' => false,
+        'message' => 'ชำระเงินไม่สำเร็จ',
+    ];
+    $id = $request->input('id');
+    if ($id) {
+        $total = DB::table('orders as o')
+            ->select(
+                'o.table_id',
+                DB::raw('SUM(o.total) as total'),
+            )
+            ->whereNotNull('table_id')
+            ->groupBy('o.table_id')
+            ->where('table_id', $id)
+            ->whereIn('status', [1, 2])
+            ->first();
 
-            $discount = 0;
-            $couponCode = $request->input('coupon_code');
-            $couponModel = null;
-            $couponCode = $request->input('coupon_code');
-            if ($couponCode) {
-                $couponModel = Coupon::where('code', $couponCode)->first();
-                if ($couponModel && $couponModel->isValid()) {
-                    if ($couponModel->discount_type == 'percent') {
-                        $discount = ($total->total * $couponModel->discount_value) / 100;
-                    } else {
-                        $discount = $couponModel->discount_value;
-                    }
-                    $discount = min($discount, $total->total);
-                    $couponModel->increment('used_count');
+        $discount = 0;
+        $bonusPoints = 0;
+        $couponCode = $request->input('coupon_code');
+        $couponModel = null;
+        
+        if ($couponCode) {
+            $couponModel = Coupon::where('code', $couponCode)->first();
+            if ($couponModel && $couponModel->isValid()) {
+                
+                // 🔍 Debug: เพิ่ม Log เพื่อตรวจสอบ
+                \Log::info('Coupon Debug', [
+                    'code' => $couponModel->code,
+                    'type' => $couponModel->discount_type,
+                    'value' => $couponModel->discount_value,
+                    'order_total' => $total->total
+                ]);
+                
+                // ✅ ตรวจสอบประเภทคูปองอย่างชัดเจน
+                if ($couponModel->discount_type === 'point') {
+                    // คูปอง Point: ไม่ลดราคา แต่ให้ Point
+                    $discount = 0;
+                    $bonusPoints = $couponModel->discount_value;
+                    \Log::info('Point Coupon Applied', ['bonus_points' => $bonusPoints]);
+                } else {
+                    // คูปองส่วนลด: ใช้ method จาก Model
+                    $discount = $couponModel->calculateDiscount($total->total);
+                    $bonusPoints = 0;
+                    \Log::info('Discount Coupon Applied', ['discount' => $discount]);
                 }
-            }
-            $pay = new Pay();
-            $pay->payment_number = $this->generateRunningNumber();
-            $pay->table_id = $id;
-            $pay->total = $total->total - $discount;
-            if ($pay->save()) {
-                $order = Orders::where('table_id', $id)->whereIn('status', [1, 2])->get();
-                foreach ($order as $rs) {
-                    $rs->status = 3;
-                    if ($rs->save()) {
-                        $paygroup = new PayGroup();
-                        $paygroup->pay_id = $pay->id;
-                        $paygroup->order_id = $rs->id;
-                        $paygroup->save();
-                    }
-                }
-
-                $userId = $request->input('user_id');
-                if ($userId) {
-                    $user = User::find($userId);
-                    if ($user) {
-                        $points = floor(($total->total - $discount) / 10);
-                        if ($couponModel && $couponModel->isValid()) {
-                            $points += 10;
-                        }
-                        $user->point += $points;
-                        $user->save();
-                    }
-                }
-                $data = [
-                    'status' => true,
-                    'message' => 'ชำระเงินเรียบร้อยแล้ว',
-                ];
+                
+                // เพิ่มจำนวนการใช้งานคูปอง
+                $couponModel->incrementUsage();
             }
         }
-        return response()->json($data);
+        
+        // 🔍 Debug: ตรวจสอบค่าก่อนบันทึก
+        \Log::info('Payment Calculation', [
+            'original_total' => $total->total,
+            'discount' => $discount,
+            'final_total' => $total->total - $discount,
+            'bonus_points' => $bonusPoints
+        ]);
+        
+        $pay = new Pay();
+        $pay->payment_number = $this->generateRunningNumber();
+        $pay->table_id = $id;
+        $pay->total = $total->total - $discount;
+        
+        if ($pay->save()) {
+            $order = Orders::where('table_id', $id)->whereIn('status', [1, 2])->get();
+            foreach ($order as $rs) {
+                $rs->status = 3;
+                if ($rs->save()) {
+                    $paygroup = new PayGroup();
+                    $paygroup->pay_id = $pay->id;
+                    $paygroup->order_id = $rs->id;
+                    $paygroup->save();
+                }
+            }
+
+            $userId = $request->input('user_id');
+            if ($userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    // คำนวณ Point ปกติจากการซื้อ
+                    $normalPoints = floor(($total->total - $discount) / 10);
+                    
+                    // รวม Point ปกติ + Point โบนัส
+                    $totalPoints = $normalPoints + $bonusPoints;
+                    
+                    \Log::info('Points Calculation', [
+                        'normal_points' => $normalPoints,
+                        'bonus_points' => $bonusPoints,
+                        'total_points' => $totalPoints
+                    ]);
+                    
+                    $user->point += $totalPoints;
+                    $user->save();
+                }
+            }
+            
+            $message = 'ชำระเงินเรียบร้อยแล้ว';
+            if ($bonusPoints > 0) {
+                $message .= ' และได้รับ Point โบนัส ' . number_format($bonusPoints) . ' Point';
+            }
+            
+            $data = [
+                'status' => true,
+                'message' => $message,
+            ];
+        }
     }
+    return response()->json($data);
+}
     public function checkUser(Request $request)
     {
         $keyword = $request->input('keyword');

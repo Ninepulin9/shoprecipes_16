@@ -20,7 +20,7 @@
                                         <th class="text-center">Code</th>
                                         <th class="text-center">ประเภทส่วนลด</th>
                                         <th class="text-center">มูลค่าส่วนลด</th>
-                                        <th class="text-center">จำนวนครั้งที่ใช้แล้ว</th>
+                                        <th class="text-center">การใช้งาน</th>
                                         <th class="text-center">จำนวนครั้งสูงสุด</th>
                                         <th class="text-center">วันหมดอายุ</th>
                                         <th class="text-center">จัดการ</th>

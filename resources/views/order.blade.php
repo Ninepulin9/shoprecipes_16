@@ -418,26 +418,30 @@
         });
     });
 
-    $('#coupon_select').change(function(){
-        var code = $(this).val();
-        if(!code){
-            $('#discounted').text('');
-            return;
-        }
-        $.ajax({
-            type:"post",
-            url:"{{ route('checkCoupon') }}",
-            data:{code:code, subtotal: parseFloat($('#totalPay').text().replace(' บาท',''))},
-            headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'},
-            success:function(res){
-                if(res.status){
+  $('#coupon_select').change(function(){
+    var code = $(this).val();
+    if(!code){
+        $('#discounted').text('');
+        return;
+    }
+    $.ajax({
+        type:"post",
+        url:"{{ route('checkCoupon') }}",
+        data:{code:code, subtotal: parseFloat($('#totalPay').text().replace(' บาท',''))},
+        headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'},
+        success:function(res){
+            if(res.status){
+                if(res.coupon_type === 'point') {
+                    $('#discounted').html('<span class="text-success">🎁 โบนัส ' + res.bonus_points + ' Point</span>');
+                } else {
                     $('#discounted').text(res.final_total + ' บาทหลังส่วนลด');
-                }else{
-                    $('#discounted').text('');
                 }
+            }else{
+                $('#discounted').text('');
             }
-        });
+        }
     });
+});
     $(document).on('click', '.modalRider', function(e) {
         var total = $(this).data('total');
         var id = $(this).data('id');

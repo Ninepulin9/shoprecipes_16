@@ -30,11 +30,13 @@
                                             <select class="form-select" id="discount_type" name="discount_type" required>
                                                 <option value="percent">เปอร์เซ็นต์ (%)</option>
                                                 <option value="fixed">จำนวนเงินคงที่</option>
+                                                <option value="point">เพิ่ม Point</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="discount_value" class="form-label">มูลค่าส่วนลด :</label>
+                                            <label for="discount_value" class="form-label" id="discount_value_label">มูลค่าส่วนลด :</label>
                                             <input type="number" class="form-control" id="discount_value" name="discount_value" required>
+                                            <div class="form-text" id="discount_value_help">ใส่จำนวนตามประเภทที่เลือก</div>
                                         </div>
                                     </div>
 
@@ -46,6 +48,39 @@
                                         <div class="col-md-6">
                                             <label for="expired_at" class="form-label">วันหมดอายุ (เว้นว่าง = ไม่มีวันหมดอายุ) :</label>
                                             <input type="date" class="form-control" id="expired_at" name="expired_at">
+                                        </div>
+                                    </div>
+
+                                    <!-- ข้อมูลเพิ่มเติมสำหรับเปอร์เซ็นต์ -->
+                                    <div class="row g-3 mb-3" id="percent_info" style="display: none;">
+                                        <div class="col-md-12">
+                                            <div class="alert alert-info" style="background-color: #e6f7ff; border-color: #91d5ff; color: #1890ff;">
+                                                <h6 class="alert-heading" style="color: #1890ff;">คูปองเปอร์เซ็นต์ %</h6>
+                                                <p class="mb-0" style="color: #1890ff;">ตัวอย่างการใช้งาน: ใส่ 10 = ลูกค้าจะได้รับส่วนลด 10%</p>
+                                               
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ข้อมูลเพิ่มเติมสำหรับจำนวนเงิน -->
+                                    <div class="row g-3 mb-3" id="fixed_info" style="display: none;">
+                                        <div class="col-md-12">
+                                            <div class="alert alert-info" style="background-color: #e6f7ff; border-color: #91d5ff; color: #1890ff;">
+                                                <h6 class="alert-heading" style="color: #1890ff;">คูปองจำนวนเงิน</h6>
+                                                <p class="mb-0" style="color: #1890ff;">ตัวอย่างการใช้งาน: ใส่ 50 = ลูกค้าจะได้รับส่วนลด 50 บาท</p>
+                                         
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ข้อมูลเพิ่มเติมสำหรับ Point -->
+                                    <div class="row g-3 mb-3" id="point_info" style="display: none;">
+                                        <div class="col-md-12">
+                                            <div class="alert alert-info" style="background-color: #e6f7ff; border-color: #91d5ff; color: #1890ff;">
+                                                <h6 class="alert-heading" style="color: #1890ff;">คูปอง Point</h6>
+                                                <p class="mb-0" style="color: #1890ff;">ตัวอย่างการใช้งาน: ใส่ 100 = ลูกค้าจะได้รับ 100 Point เพิ่ม</p>
+                                                
+                                            </div>
                                         </div>
                                     </div>
 
@@ -61,4 +96,44 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('script')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#discount_type').on('change', function() {
+        var selectedType = $(this).val();
+        var label = $('#discount_value_label');
+        var help = $('#discount_value_help');
+        var percentInfo = $('#percent_info');
+        var fixedInfo = $('#fixed_info');
+        var pointInfo = $('#point_info');
+        
+        percentInfo.hide();
+        fixedInfo.hide();
+        pointInfo.hide();
+        
+        switch(selectedType) {
+            case 'percent':
+                label.text('เปอร์เซ็นต์ส่วนลด :');
+                help.text('');
+                percentInfo.show();
+                break;
+            case 'fixed':
+                label.text('จำนวนเงินส่วนลด :');
+                help.text('');
+                fixedInfo.show();
+                break;
+            case 'point':
+                label.text('จำนวน Point ที่ให้ :');
+                help.text('');
+                pointInfo.show();
+                break;
+        }
+    });
+    
+    $('#discount_type').trigger('change');
+});
+</script>
 @endsection

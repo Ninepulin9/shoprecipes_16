@@ -80,138 +80,149 @@ class Main extends Controller
         return view('users.list_page');
     }
 
-    public function SendOrder(Request $request)
-    {
-        $data = [
-            'status' => false,
-            'message' => 'สั่งออเดอร์ไม่สำเร็จ',
+    // ✅ แก้ไข SendOrder method ใน Main Controller
+public function SendOrder(Request $request)
+{
+    $data = [
+        'status' => false,
+        'message' => 'สั่งออเดอร์ไม่สำเร็จ',
+    ];
+    $orderData = $request->input('cart');
+    $remark = $request->input('remark');
+    $coupon = $request->input('coupon');
+    $item = array();
+    $menu_id = array();
+    $categories_id = array();
+    $total = 0;
+    foreach ($orderData as $key => $order) {
+        $item[$key] = [
+            'menu_id' => $order['id'],
+            'quantity' => $order['amount'],
+            'price' => $order['total_price'],
+            'note' => $order['note'] ?? '',
         ];
-        $orderData = $request->input('cart');
-        $remark = $request->input('remark');
-        $coupon = $request->input('coupon');
-        $item = array();
-        $menu_id = array();
-        $categories_id = array();
-        $total = 0;
-        foreach ($orderData as $key => $order) {
-            $item[$key] = [
-                'menu_id' => $order['id'],
-                'quantity' => $order['amount'],
-                'price' => $order['total_price'],
-                'note' => $order['note'] ?? '',
-            ];
-            if (!empty($order['options'])) {
-                foreach ($order['options'] as $rs) {
-                    $item[$key]['option'][] = $rs['id'];
-                }
-            } else {
-                $item[$key]['option'] = [];
+        if (!empty($order['options'])) {
+            foreach ($order['options'] as $rs) {
+                $item[$key]['option'][] = $rs['id'];
             }
-            $total = $total + $order['total_price'];
-            $menu_id[] = $order['id'];
+        } else {
+            $item[$key]['option'] = [];
         }
-        $menu_id = array_unique($menu_id);
-        foreach ($menu_id as $rs) {
-            $menu = Menu::find($rs);
-            $categories_id[] = $menu->categories_member_id;
-        }
-        $categories_id = array_unique($categories_id);
+        $total = $total + $order['total_price'];
+        $menu_id[] = $order['id'];
+    }
+    $menu_id = array_unique($menu_id);
+    foreach ($menu_id as $rs) {
+        $menu = Menu::find($rs);
+        $categories_id[] = $menu->categories_member_id;
+    }
+    $categories_id = array_unique($categories_id);
 
-        if (!empty($item)) {
-            $discount = 0;
-            if ($coupon) {
-                $couponModel = Coupon::where('code', $coupon)->first();
-                if ($couponModel && $couponModel->isValid()) {
-                    $discount = $this->calculateDiscount($couponModel, $total);
-                    $couponModel->increment('used_count');
-                }
+    if (!empty($item)) {
+        $discount = 0;
+        if ($coupon) {
+            $couponModel = Coupon::where('code', $coupon)->first();
+            if ($couponModel && $couponModel->isValid()) {
+                // ✅ ใช้ method จาก Model แทนการเรียก calculateDiscount เก่า
+                $discount = $couponModel->calculateDiscount($total);
+                $couponModel->incrementUsage();
             }
-            $order = new Orders();
-            $order->table_id = session('table_id') ?? '1';
-            $order->total = $total - $discount;
-            $order->remark = $remark;
-            $order->status = 1;
-            if ($order->save()) {
-                foreach ($item as $rs) {
-                    $orderdetail = new OrdersDetails();
-                    $orderdetail->order_id = $order->id;
-                    $orderdetail->menu_id = $rs['menu_id'];
-                    $orderdetail->quantity = $rs['quantity'];
-                    $orderdetail->price = $rs['price'];
-                    $orderdetail->remark = $rs['note'];
-                    if ($orderdetail->save()) {
-                        foreach ($rs['option'] as $key => $option) {
-                            $orderOption = new OrdersOption();
-                            $orderOption->order_detail_id = $orderdetail->id;
-                            $orderOption->option_id = $option;
-                            $orderOption->save();
-                            $menuStock = MenuStock::where('menu_option_id', $option)->get();
-                            if ($menuStock->isNotEmpty()) {
-                                foreach ($menuStock as $stock_rs) {
-                                    $stock = Stock::find($stock_rs->stock_id);
-                                    $stock->amount = $stock->amount - ($stock_rs->amount * $rs['quantity']);
-                                    if ($stock->save()) {
-                                        $log_stock = new LogStock();
-                                        $log_stock->stock_id = $stock_rs->stock_id;
-                                        $log_stock->order_id = $order->id;
-                                        $log_stock->menu_option_id = $rs['option'];
-                                        $log_stock->old_amount = $stock_rs->amount;
-                                        $log_stock->amount = ($stock_rs->amount * $rs['quantity']);
-                                        $log_stock->status = 2;
-                                        $log_stock->save();
-                                    }
+        }
+        $order = new Orders();
+        $order->table_id = session('table_id') ?? '1';
+        $order->total = $total - $discount;
+        $order->remark = $remark;
+        $order->status = 1;
+        if ($order->save()) {
+            // ... ส่วนที่เหลือเหมือนเดิม
+            foreach ($item as $rs) {
+                $orderdetail = new OrdersDetails();
+                $orderdetail->order_id = $order->id;
+                $orderdetail->menu_id = $rs['menu_id'];
+                $orderdetail->quantity = $rs['quantity'];
+                $orderdetail->price = $rs['price'];
+                $orderdetail->remark = $rs['note'];
+                if ($orderdetail->save()) {
+                    foreach ($rs['option'] as $key => $option) {
+                        $orderOption = new OrdersOption();
+                        $orderOption->order_detail_id = $orderdetail->id;
+                        $orderOption->option_id = $option;
+                        $orderOption->save();
+                        $menuStock = MenuStock::where('menu_option_id', $option)->get();
+                        if ($menuStock->isNotEmpty()) {
+                            foreach ($menuStock as $stock_rs) {
+                                $stock = Stock::find($stock_rs->stock_id);
+                                $stock->amount = $stock->amount - ($stock_rs->amount * $rs['quantity']);
+                                if ($stock->save()) {
+                                    $log_stock = new LogStock();
+                                    $log_stock->stock_id = $stock_rs->stock_id;
+                                    $log_stock->order_id = $order->id;
+                                    $log_stock->menu_option_id = $rs['option'];
+                                    $log_stock->old_amount = $stock_rs->amount;
+                                    $log_stock->amount = ($stock_rs->amount * $rs['quantity']);
+                                    $log_stock->status = 2;
+                                    $log_stock->save();
                                 }
                             }
                         }
                     }
                 }
-                
             }
-            $order = [
-                'is_member' => 0,
-                'text' => '📦 มีออเดอร์ใหม่'
-            ];
-            event(new OrderCreated($order));
-            if (!empty($categories_id)) {
-                foreach ($categories_id as $rs) {
-                    $order = [
-                        'is_member' => 1,
-                        'categories_id' => $rs,
-                        'text' => '📦 มีออเดอร์ใหม่'
-                    ];
-                    event(new OrderCreated($order));
-                }
+        }
+        $order = [
+            'is_member' => 0,
+            'text' => '📦 มีออเดอร์ใหม่'
+        ];
+        event(new OrderCreated($order));
+        if (!empty($categories_id)) {
+            foreach ($categories_id as $rs) {
+                $order = [
+                    'is_member' => 1,
+                    'categories_id' => $rs,
+                    'text' => '📦 มีออเดอร์ใหม่'
+                ];
+                event(new OrderCreated($order));
             }
+        }
+        $data = [
+            'status' => true,
+            'message' => 'สั่งออเดอร์เรียบร้อยแล้ว',
+        ];
+    }
+    return response()->json($data);
+}
+
+   public function checkCoupon(Request $request)
+{
+    $data = [
+        'status' => false,
+        'message' => 'คูปองไม่ถูกต้อง',
+    ];
+
+    $code = $request->input('code');
+    $subtotal = $request->input('subtotal');
+
+    if ($code && $subtotal > 0) {
+        $coupon = Coupon::where('code', $code)->first();
+        
+        if ($coupon && $coupon->isValid()) {
+            $discount = $coupon->calculateDiscount($subtotal);
+            $bonusPoints = $coupon->getBonusPoints();   
+            
             $data = [
                 'status' => true,
-                'message' => 'สั่งออเดอร์เรียบร้อยแล้ว',
+                'message' => 'คูปองใช้ได้',
+                'coupon_type' => $coupon->discount_type, 
+                'discount' => $discount,
+                'bonus_points' => $bonusPoints, 
+                'final_total' => $subtotal - $discount,
+                'original_total' => $subtotal
             ];
         }
-        return response()->json($data);
     }
 
-    public function checkCoupon(Request $request)
-    {
-        $code = $request->input('code');
-        $subtotal = $request->input('subtotal');
-
-        $coupon = Coupon::where('code', $code)->first();
-        if (!$coupon) {
-            return response()->json(['status' => false, 'message' => 'ไม่พบคูปองนี้']);
-        }
-        if (!$coupon->isValid()) {
-            return response()->json(['status' => false, 'message' => 'คูปองหมดอายุหรือใช้งานครบแล้ว']);
-        }
-
-        $discount = $this->calculateDiscount($coupon, $subtotal);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'ใช้คูปองเรียบร้อยแล้ว',
-            'discount' => $discount,
-            'final_total' => $subtotal - $discount
-        ]);
-    }
+    return response()->json($data);
+}
 
     public function sendEmp()
     {
@@ -246,17 +257,6 @@ class Main extends Controller
             'final_total' => $subtotal - $discount
         ]);
     }
-    private function calculateDiscount(Coupon $coupon, $subtotal)
-    {
-        if ($coupon->discount_type == 'percent') {
-            $discount = ($subtotal * $coupon->discount_value) / 100;
-        } else {
-            $discount = $coupon->discount_value;
-        }
-
-        $discount = min($discount, $subtotal);
-
-        return $discount;
-    }
+   
 
 }
