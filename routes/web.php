@@ -267,6 +267,12 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/trashed', [BenefitController::class, 'benefitTrashed'])->name('benefitTrashed');
     Route::post('/restore/{id}', [BenefitController::class, 'benefitRestore'])->name('benefitRestore');
     Route::post('/force-delete/{id}', [BenefitController::class, 'benefitForceDelete'])->name('benefitForceDelete');
+    // Redeem Benefit
+    Route::get('/redeem', [BenefitController::class, 'redeemBenefit'])->name('redeemBenefit');
+    Route::post('/redeem/list-data', [BenefitController::class, 'redeemListData'])->name('redeemListData');
+    Route::get('/redeem/detail/{id}', [BenefitController::class, 'redeemDetails'])->name('redeemDetails');
+    Route::post('/admin/checkPoint', [BenefitController::class, 'checkPoint'])->name('checkPoint');
+    Route::post('/admin/redeemReward', [BenefitController::class, 'redeemReward'])->name('redeemReward');
 });
 });
 

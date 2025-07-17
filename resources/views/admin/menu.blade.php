@@ -121,6 +121,12 @@ $config = Config::first();
                     <div data-i18n="Basic">สิทธิประโยชน์</div>
                 </a>
             </li>
+            <li class="menu-item {{ ($function_key == 'redeem_benefit') ? 'active' : '' }}">
+                <a href="{{route('redeemBenefit')}}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bxs-gift"></i>
+                    <div data-i18n="Basic">แลกแต้ม</div>
+                </a>
+            </li>
             <li class="menu-header small text-uppercase"><span class="menu-header-text">รายจ่าย</span></li>
             <li class="menu-item {{ ($function_key == 'category_expenses') ? 'active' : '' }}">
                 <a href="{{route('category_expenses')}}" class="menu-link">
