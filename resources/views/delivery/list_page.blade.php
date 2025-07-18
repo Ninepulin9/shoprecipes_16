@@ -161,6 +161,7 @@ $config = Config::first();
         <button type="button" class="btn-aprove mt-3" id="confirm-order-btn" style="display: none;">ยืนยันคำสั่งซื้อ</button>
         @endif
     </div>
+            <div style="height: 50px;"></div>
 </div>
 <script src="{{ asset('assets/vendor/libs/jquery/jquery.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

@@ -126,13 +126,22 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/admin/table/edit/{id}', [Table::class, 'tableEdit'])->name('tableEdit');
     Route::post('/admin/table/delete', [Table::class, 'tableDelete'])->name('tableDelete');
     Route::post('/admin/table/save', [Table::class, 'tableSave'])->name('tableSave');
-    //คูปอง
-    Route::get('/admin/coupons', [Coupons::class, 'coupons'])->name('coupons');
-    Route::post('/admin/coupons/listData', [Coupons::class, 'couponslistData'])->name('couponslistData');
-    Route::get('/admin/coupons/create', [Coupons::class, 'couponsCreate'])->name('couponsCreate');
-    Route::get('/admin/coupons/edit/{id}', [Coupons::class, 'couponsEdit'])->name('couponsEdit');
-    Route::post('/admin/coupons/save', [Coupons::class, 'couponSave'])->name('couponSave');
-    Route::post('/admin/coupons/delete', [Coupons::class, 'couponsDelete'])->name('couponsDelete');
+    
+    //คูปอง 
+    Route::prefix('admin/coupons')->group(function () {
+        Route::get('/', [Coupons::class, 'coupons'])->name('coupons'); 
+        Route::post('/list-data', [Coupons::class, 'couponsListData'])->name('couponslistData');
+        Route::get('/create', [Coupons::class, 'couponsCreate'])->name('couponsCreate');
+        Route::get('/edit/{id}', [Coupons::class, 'couponsEdit'])->name('couponsEdit');
+        Route::post('/save', [Coupons::class, 'couponSave'])->name('couponSave');
+        Route::post('/delete', [Coupons::class, 'couponsDelete'])->name('couponsDelete');
+        Route::post('/check-code', [Coupons::class, 'checkCouponCode'])->name('checkCouponCode');
+        Route::get('/details/{id}', [Coupons::class, 'getCouponDetails'])->name('getCouponDetails');
+        Route::get('/deleted', [Coupons::class, 'couponsDeleted'])->name('couponsDeleted');
+        Route::post('/deleted/list-data', [Coupons::class, 'couponsDeletedListData'])->name('couponsDeletedListData');
+        Route::post('/restore', [Coupons::class, 'couponsRestore'])->name('couponsRestore');
+    });
+    
     //หมวดหมู่
     Route::get('/admin/category', [Category::class, 'category'])->name('category');
     Route::post('/admin/category/listData', [Category::class, 'categorylistData'])->name('categorylistData');
@@ -235,7 +244,6 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/admin/order/printOrder/{id}', [Memberorder::class, 'printOrder'])->name('printOrder');
     Route::get('/admin/order/printOrderRider/{id}', [Memberorder::class, 'printOrderRider'])->name('printOrderRider');
 
-
     //user
     Route::get('/admin/user', [Member::class, 'user'])->name('user');
     Route::post('/admin/user/listData', [Member::class, 'UsermemberlistData'])->name('UsermemberlistData');
@@ -247,36 +255,28 @@ Route::middleware(['role:admin'])->group(function () {
     //check email and tel
     Route::post('/check-email-exists', [Member::class, 'checkEmailExists'])->name('checkEmailExists');
     Route::post('/check-tel-exists', [Member::class, 'checkTelExists'])->name('checkTelExists');
-    //Coupons
-    Route::get('/admin/coupons', [Coupons::class, 'coupons'])->name('coupons');
-    Route::post('/admin/coupons/listData', [Coupons::class, 'couponslistData'])->name('couponslistData');
-    Route::get('/admin/coupons/create', [Coupons::class, 'couponsCreate'])->name('couponsCreate');
-    Route::get('/admin/coupons/edit/{id}', [Coupons::class, 'couponsEdit'])->name('couponsEdit');
-    Route::post('/admin/coupons/save', [Coupons::class, 'couponSave'])->name('couponSave');
-    Route::post('/admin/coupons/delete', [Coupons::class, 'couponsDelete'])->name('couponsDelete');
 
-    //Benefits// Benefit Routes
+    //Benefits
     Route::prefix('admin/benefit')->group(function () {
-    Route::get('/', [BenefitController::class, 'benefit'])->name('benefit');
-    Route::post('/list-data', [BenefitController::class, 'benefitListData'])->name('benefitListData');
-    Route::get('/create', [BenefitController::class, 'benefitCreate'])->name('benefitCreate');
-    Route::post('/save', [BenefitController::class, 'benefitSave'])->name('benefitSave');
-    Route::get('/edit/{id}', [BenefitController::class, 'benefitEdit'])->name('benefitEdit');
-    Route::post('/delete', [BenefitController::class, 'benefitDelete'])->name('benefitDelete');
-    Route::post('/toggle-status', [BenefitController::class, 'benefitToggleStatus'])->name('benefitToggleStatus');
-    Route::get('/detail/{id}', [BenefitController::class, 'benefitDetail'])->name('benefitDetail');
-    Route::post('/check-available', [BenefitController::class, 'benefitCheckAvailable'])->name('benefitCheckAvailable');
-    Route::get('/trashed', [BenefitController::class, 'benefitTrashed'])->name('benefitTrashed');
-    Route::post('/restore/{id}', [BenefitController::class, 'benefitRestore'])->name('benefitRestore');
-    Route::post('/force-delete/{id}', [BenefitController::class, 'benefitForceDelete'])->name('benefitForceDelete');
-    // Redeem Benefit
-    Route::get('/redeem', [BenefitController::class, 'redeemBenefit'])->name('redeemBenefit');
-    Route::post('/redeem/list-data', [BenefitController::class, 'redeemListData'])->name('redeemListData');
-    Route::get('/redeem/detail/{id}', [BenefitController::class, 'redeemDetails'])->name('redeemDetails');
-    Route::post('/admin/checkPoint', [BenefitController::class, 'checkPoint'])->name('checkPoint');
-    Route::post('/admin/redeemReward', [BenefitController::class, 'redeemReward'])->name('redeemReward');
+        Route::get('/', [BenefitController::class, 'benefit'])->name('benefit');
+        Route::post('/list-data', [BenefitController::class, 'benefitListData'])->name('benefitListData');
+        Route::get('/create', [BenefitController::class, 'benefitCreate'])->name('benefitCreate');
+        Route::post('/save', [BenefitController::class, 'benefitSave'])->name('benefitSave');
+        Route::get('/edit/{id}', [BenefitController::class, 'benefitEdit'])->name('benefitEdit');
+        Route::post('/delete', [BenefitController::class, 'benefitDelete'])->name('benefitDelete');
+        Route::post('/toggle-status', [BenefitController::class, 'benefitToggleStatus'])->name('benefitToggleStatus');
+        Route::get('/detail/{id}', [BenefitController::class, 'benefitDetail'])->name('benefitDetail');
+        Route::post('/check-available', [BenefitController::class, 'benefitCheckAvailable'])->name('benefitCheckAvailable');
+        Route::get('/trashed', [BenefitController::class, 'benefitTrashed'])->name('benefitTrashed');
+        Route::post('/restore/{id}', [BenefitController::class, 'benefitRestore'])->name('benefitRestore');
+        Route::post('/force-delete/{id}', [BenefitController::class, 'benefitForceDelete'])->name('benefitForceDelete');
+        // Redeem Benefit
+        Route::get('/redeem', [BenefitController::class, 'redeemBenefit'])->name('redeemBenefit');
+        Route::post('/redeem/list-data', [BenefitController::class, 'redeemListData'])->name('redeemListData');
+        Route::get('/redeem/detail/{id}', [BenefitController::class, 'redeemDetails'])->name('redeemDetails');
+        Route::post('/check-point', [BenefitController::class, 'checkPoint'])->name('checkPoint');
+        Route::post('/redeem-reward', [BenefitController::class, 'redeemReward'])->name('redeemReward');
+    });
 });
-});
-
 
 require __DIR__ . '/auth.php';
