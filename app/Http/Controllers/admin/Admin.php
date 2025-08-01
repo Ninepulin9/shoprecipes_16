@@ -560,7 +560,62 @@ class Admin extends Controller
         }
         return response()->json($data);
     }
+     public function ListOrderPeople()
+    {
+        $data = [
+            'status' => false,
+            'message' => '',
+            'data' => []
+        ];
+        $order = DB::table('orders as o')
+            ->select(
+                'o.users_id',
+                'users.name'
+            )
+            ->join('users', 'o.users_id', '=', 'users.id')
+            ->whereNull('o.table_id')
+            ->whereIn('o.status', [3])
+            ->groupBy('o.users_id', 'users.name')
+            ->get();
 
+        if (count($order) > 0) {
+            $info = [];
+            foreach ($order as $rs) {
+                $total = Orders::select(DB::raw("SUM(total)as total"))
+                    ->where('status', 3)
+                    ->where('users_id', $rs->users_id)
+                    ->first();
+                $moneyDay = Orders::select(DB::raw("SUM(orders.total)as total"))
+                    ->join('pay_groups', 'pay_groups.order_id', '=', 'orders.id')
+                    ->join('pays', 'pays.id', '=', 'pay_groups.pay_id')
+                    ->where('orders.status', 3)
+                    ->where('orders.users_id', $rs->users_id)
+                    ->where('pays.is_type', 0)
+                    ->first();
+                $transferDay = Orders::select(DB::raw("SUM(orders.total)as total"))
+                    ->join('pay_groups', 'pay_groups.order_id', '=', 'orders.id')
+                    ->join('pays', 'pays.id', '=', 'pay_groups.pay_id')
+                    ->where('orders.status', 3)
+                    ->where('orders.users_id', $rs->users_id)
+                    ->where('pays.is_type', 1)
+                    ->first();
+                $delivery = Orders::where('status', 3)->where('users_id', $rs->users_id)->whereNull('table_id')->count();
+                $info[] = [
+                    'name' => $rs->name,
+                    'total' => $total->total,
+                    'moneyDay' => $moneyDay->total,
+                    'transferDay' => $transferDay->total ?? '0',
+                    'delivery' => $delivery ?? '0',
+                ];
+            }
+            $data = [
+                'data' => $info,
+                'status' => true,
+                'message' => 'success'
+            ];
+        }
+        return response()->json($data);
+    }
     public function ListOrderPayRider()
     {
         $data = [

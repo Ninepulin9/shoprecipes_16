@@ -48,6 +48,11 @@ Route::get('/buy', function () {
 Route::get('/total', function () {
     return view('index');
 });
+
+Route::get('/listorder', [Main::class, 'listorder'])->name('listorder');
+    Route::post('/listorderDetails', [Main::class, 'listorderDetails'])->name('listorderDetails');
+    Route::post('/confirmPay', [Main::class, 'confirmPay'])->name('confirmPay');
+    Route::post('/admin/order/paymentConfirm', [Admin::class, 'paymentConfirm'])->name('paymentConfirm');
 //สั่ง delivery
 Route::get('/delivery', [Delivery::class, 'index'])->name('index');
 Route::get('/delivery/login', [Delivery::class, 'login'])->name('delivery.login');
@@ -110,6 +115,8 @@ Route::middleware(['role:admin'])->group(function () {
     //ตั้งค่าเว็บไซต์
     Route::get('/admin/config', [Admin::class, 'config'])->name('config');
     Route::post('/admin/config/save', [Admin::class, 'ConfigSave'])->name('ConfigSave');
+    //listorder
+    
     //โปรโมชั่น
     Route::get('/admin/promotion', [Promotion::class, 'promotion'])->name('promotion');
     Route::post('/admin/promotion/listData', [Promotion::class, 'promotionlistData'])->name('promotionlistData');
